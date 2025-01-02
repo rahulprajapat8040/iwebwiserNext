@@ -92,7 +92,11 @@ const vars = {
     TECHNOLOGY_DELETE: "DELETE Technology  Link Successfully",
     TECHNOLOGY_NOT_FOUND: "Technology  NOT_FOUND  Successfully",
 
-
+    SERVICE_DETAILS_GET: "GET Service Details Successfully",
+    SERVICE_DETAILS_CREATE: "CREATE Service Details Successfully",
+    SERVICE_DETAILS_UPDATE: "UPDATE Service Details Successfully",
+    SERVICE_DETAILS_DELETE: "DELETE Service Details Successfully",
+    SERVICE_DETAILS_NOT_FOUND: "Service Details NOT_FOUND Successfully",
     
     USER_GET: "GET User Successfully",
     USER_CREATE: "CREATE User Successfully",

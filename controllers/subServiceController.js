@@ -126,6 +126,32 @@ exports.getSubServiceById = async (req, res, next) => {
   }
 };
 
+exports.getSubServiceByServiceId = async (req, res, next) => {
+  try {
+    const { service_id } = req.params;
+    const subServices = await SubServices.findAll({
+      where: {
+        service_id,
+      },
+      include: [
+        {
+          model: Service,
+          attributes: ["id", "title"],
+        },
+      ],
+    });
+
+    return responseGenerator(
+      res,
+      vars.SUB_SERVICE_GET,
+      statusCodeVars.OK,
+      subServices
+    );
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.deleteSubService = async (req, res, next) => {
   try {
     const { id } = req.params;

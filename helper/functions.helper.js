@@ -1,11 +1,11 @@
-const responseGenerator = (res, message, statusCode, data) => {
+const responseGenerator = (res, message, statusCode = 200, data = null) => {
     return res.status(statusCode).json({
         message,
         statusCode,
         data,
         status: true
-    })
-}
+    });
+};
 
 const parseIfString = (data, keys) => {
     keys.forEach(key => {
@@ -19,10 +19,5 @@ const parseIfString = (data, keys) => {
     });
     return data;
 };
-
-
-
-
-
 
 module.exports = { responseGenerator, parseIfString };

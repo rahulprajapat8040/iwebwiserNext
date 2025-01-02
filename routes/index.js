@@ -14,6 +14,7 @@ const feedbackRouter = require('./feedbackRoutes')
 const caseStudytRouter = require('./caseStudyRoutes')
 const imageRouter = require('./ImageRoute')
 const headerRouter = require('./headerRouter')
+const serviceDetailRouter = require('./servicDetailsRoute')
 
 module.exports = (app) => {
     app.use('/api/v1/header', headerRouter)
@@ -28,8 +29,9 @@ module.exports = (app) => {
     app.use('/api/v1/service', serviceRouter)
     app.use('/api/v1/subService', subServiceEouter)
     app.use('/api/v1/serviceFaq', serviceFaqRouter)
+    app.use('/api/v1/serviceDetail', serviceDetailRouter)
     app.use('/api/v1/socialMedia', socialMediaRouter)
     app.use('/api/v1/technology', technologyRouter)
     app.use('/api/v1/admin', adminRoutes);
     app.use('/api/v1/image', imageRouter);
-};
+};  

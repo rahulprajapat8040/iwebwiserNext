@@ -9,11 +9,11 @@ const { Op } = require('sequelize');
 
 exports.createIndustry = async (req, res, next) => {
     try {
-        const { title, description, services, button_link, image } = req.body;
+        const { title, description, service_id, button_link, image } = req.body;
         const newIndustry = await Industry.create({
             title,
             description,
-            services,
+            service_id,
             button_link,
             image
         });
@@ -28,7 +28,7 @@ exports.createIndustry = async (req, res, next) => {
 exports.updateIndustry = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const { title, description, services,button_link, image } = req.body;
+        const { title, description, service_id, button_link, image } = req.body;
 
         const industry = await Industry.findByPk(id);
         dataNotExist(industry , vars.INDUSTRY_NOT_FOUND , statusCodeVars.NOT_FOUND)
@@ -36,7 +36,7 @@ exports.updateIndustry = async (req, res, next) => {
        const updatedIndustry = await industry.update({
             title,
             description,
-            services,
+            service_id,
             button_link,
             image
         });

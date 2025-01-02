@@ -17,7 +17,7 @@ const connectToDatabase = async () => {
         await sequelize.authenticate();
         console.log('Database connected...');
 
-        await sequelize.sync({alter :false});
+        // Use this once to rebuild tables, then change back to {alter: false}
         console.log('Database synced successfully');
     } catch (err) {
         console.error('Database connection error:', err);

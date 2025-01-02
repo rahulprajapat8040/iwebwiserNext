@@ -11,10 +11,11 @@ const Industry = sequelize.define('industry', {
         type: DataTypes.STRING,
     },
     description: {
-        type: DataTypes.STRING,
+        type: DataTypes.TEXT('long'),
     },
-    services: {
-        type: DataTypes.STRING,
+    service_id: {
+        type: DataTypes.UUID,
+        allowNull: true,
     },
     button_link: {
         type: DataTypes.STRING,
@@ -26,7 +27,6 @@ const Industry = sequelize.define('industry', {
     timestamps: true,
     paranoid: true
 });
-
 
 module.exports = Industry;
 

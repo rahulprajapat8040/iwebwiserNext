@@ -7,6 +7,7 @@ const SubHeader = require("../models/subHeader");
 const Service = require("../models/service");
 const ServiceFaq = require("../models/ServiceFaq");
 const SubServices = require("../models/SubServices");
+const ServiceDetails = require('../models/serviceDetails')
 
 exports.relation = () => {
   Header.hasMany(SubHeader, { foreignKey: "headerId", onDelete: "CASCADE" });
@@ -52,4 +53,26 @@ exports.relation = () => {
     foreignKey: "service_id",
     onDelete: "CASCADE",
   });
+
+  // Service and ServiceDetails relationship (one-to-one)
+  Service.hasOne(ServiceDetails, {
+    foreignKey: "service_id",
+    onDelete: "CASCADE",
+  });
+  ServiceDetails.belongsTo(Service, {
+    foreignKey: "service_id",
+    onDelete: "CASCADE",
+  });
+
+  // Industry and Service relationship
+  Service.hasMany(Industry, {
+    foreignKey: "service_id",
+    onDelete: "SET NULL"
+  });
+  Industry.belongsTo(Service, {
+    foreignKey: "service_id",
+    onDelete: "SET NULL"
+  });
+
+  // Remove all ServiceDetailsSubServices related code
 };

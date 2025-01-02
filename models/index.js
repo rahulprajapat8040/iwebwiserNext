@@ -14,12 +14,13 @@
 // db.Branch = require('./Branches')
 // module.exports = db;
 
-const SubChildHeader = require("./subChildHeader");
+const ServiceDetails = require("./serviceDetails");
 
 module.exports = {
   Service: require("./service"),
   ServiceFaq: require("./ServiceFaq"),
   SubServices: require("./SubServices"),
+  ServiceDetails: require("./serviceDetails"),
   Industry: require("./Industry"),
   Branch: require("./branch"), //pages
   Technology: require("./technology"),
