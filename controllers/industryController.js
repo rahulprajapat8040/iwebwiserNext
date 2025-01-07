@@ -3,7 +3,7 @@ const { vars } = require('../server/constants.js');
 const { statusCodeVars } = require('../server/statusCode.js');
 const { setCacheData, getCacheData, deleteCacheData } = require("../helper/redis.helper.js");
 const {  dataNotExist } = require("../helper/check_existence.helper.js");
-const {  Industry } = require('../models/index.js');
+const {  Industry, Service } = require('../models/index.js');
 const { Op } = require('sequelize');
 
 
@@ -56,7 +56,11 @@ exports.getAllIndustry = async (req, res, next) => {
 
         if (showAll === "true") {
             // Fetch all industry data without pagination
-            industryData = await Industry.findAll();
+            industryData = await Industry.findAll({
+                include: [{
+                    model: Service 
+                }]
+            });
         } else {
             // Handle pagination
             const pageNumber = parseInt(page) || 1;
@@ -65,6 +69,9 @@ exports.getAllIndustry = async (req, res, next) => {
             const { rows, count: totalItems } = await Industry.findAndCountAll({
                 limit: pageSize,
                 offset: (pageNumber - 1) * pageSize,
+                include: [{
+                    model: Service
+                }]
             });
 
             industryData = rows;

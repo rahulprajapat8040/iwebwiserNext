@@ -14,7 +14,6 @@
 // db.Branch = require('./Branches')
 // module.exports = db;
 
-const ServiceDetails = require("./serviceDetails");
 
 module.exports = {
   Service: require("./service"),
@@ -35,4 +34,5 @@ module.exports = {
   Header: require("./header"),
   SubHeader: require("./subHeader"),
   SubChildHeader: require("./subChildHeader"),
+  Field: require('./field')
 };

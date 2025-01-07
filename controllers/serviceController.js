@@ -8,11 +8,11 @@ const {
 } = require("../helper/redis.helper.js");
 const { dataNotExist } = require("../helper/check_existence.helper.js");
 const { Op } = require("sequelize");
-const { Service, SubServices, ServiceFaq } = require("../models/index.js");
+const { Service, SubServices, ServiceFaq, Field } = require("../models/index.js");
 
 exports.createService = async (req, res, next) => {
   try {
-    const { title, short_description, long_description, button_link, image } =
+    const { title, short_description, long_description, button_link, image, field_id } =
       req.body;
     const newService = await Service.create({
       title,
@@ -20,6 +20,7 @@ exports.createService = async (req, res, next) => {
       long_description,
       button_link,
       image,
+      field_id
     });
     return responseGenerator(
       res,
@@ -35,7 +36,7 @@ exports.createService = async (req, res, next) => {
 exports.updateService = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, short_description, long_description, button_link, image } =
+    const { title, short_description, long_description, button_link, image, field_id } =
       req.body;
 
     const service = await Service.findByPk(id);
@@ -47,6 +48,7 @@ exports.updateService = async (req, res, next) => {
       long_description,
       button_link,
       image,
+      field_id
     });
     return responseGenerator(
       res,
@@ -73,12 +75,15 @@ exports.getAllService = async (req, res, next) => {
         include: [
           {
             model: SubServices,
-            attributes: ["id", "title", "description", "image", 'button_link'],
           },
           {
             model: ServiceFaq,
             attributes: ["id", "question", "answer"],
           },
+          {
+            model: Field,
+            attributes: ["id", "title", "description"],
+          }
         ],
       });
     } else {
@@ -93,6 +98,10 @@ exports.getAllService = async (req, res, next) => {
           {
             model: SubServices,
           },
+          {
+            model: Field,
+            attributes: ["id", "title", "description"],
+          }
         ],
       });
 

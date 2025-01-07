@@ -1,0 +1,128 @@
+const { responseGenerator } = require("../helper/functions.helper.js");
+const { vars } = require("../server/constants.js");
+const { statusCodeVars } = require("../server/statusCode.js");
+const { dataNotExist } = require("../helper/check_existence.helper.js");
+const { Field, Service, ServiceDetails } = require("../models/index.js");
+
+exports.createField = async (req, res, next) => {
+  try {
+    const { title, description, buttonText, buttonLink, image, slug } =
+      req.body;
+    const newField = await Field.create({
+      slug,
+      title,
+      description,
+      buttonText,
+      buttonLink,
+      image,
+    });
+    return responseGenerator(
+      res,
+      vars.FIELD_CREATE,
+      statusCodeVars.OK,
+      newField
+    );
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.updateField = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { title, description, buttonText, buttonLink, image, slug } =
+      req.body;
+
+    const field = await Field.findByPk(id);
+    dataNotExist(field, vars.FIELD_NOT_FOUND, statusCodeVars.NOT_FOUND);
+
+    const updatedField = await field.update({
+      title,
+      description,
+      buttonText,
+      buttonLink,
+      image,
+      slug,
+    });
+    return responseGenerator(
+      res,
+      vars.FIELD_UPDATE,
+      statusCodeVars.OK,
+      updatedField
+    );
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getAllField = async (req, res, next) => {
+  try {
+    const fields = await Field.findAll({
+      include: [
+        {
+          model: Service,
+          include: [
+            {
+              model: ServiceDetails,
+              attributes: ["slug"],
+            },
+          ],
+        },
+      ],
+    });
+    return responseGenerator(res, vars.FIELD_GET, statusCodeVars.OK, fields);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getFieldById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const field = await Field.findByPk(id);
+    dataNotExist(field, vars.FIELD_NOT_FOUND, statusCodeVars.NOT_FOUND);
+
+    return responseGenerator(res, vars.FIELD_GET, statusCodeVars.OK, field);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.deleteField = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const field = await Field.findByPk(id);
+    dataNotExist(field, vars.FIELD_NOT_FOUND, statusCodeVars.NOT_FOUND);
+    await field.destroy();
+    return responseGenerator(res, vars.FIELD_DELETE, statusCodeVars.OK, field);
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getFieldBySlug = async (req, res, next) => {
+  try {
+    const { slug } = req.params;
+    const field = await Field.findOne({
+      where: {
+        slug: slug,
+      },
+      include: [
+        {
+          model: Service,
+          include: [
+            {
+              model: ServiceDetails,
+              attributes: ["slug"]
+            }
+          ]
+        }
+      ]
+    });
+    dataNotExist(field, vars.FIELD_NOT_FOUND, statusCodeVars.NOT_FOUND);
+    return responseGenerator(res, vars.FIELD_GET, statusCodeVars.OK, field);
+  } catch (err) {
+    next(err);
+  }
+};

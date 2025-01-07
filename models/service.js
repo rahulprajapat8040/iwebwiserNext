@@ -23,6 +23,14 @@ const Service = sequelize.define("services", {
   image: {
     type: DataTypes.STRING,
   },
+  field_id: {
+    type: DataTypes.UUID,
+    allowNull: true,
+    references: {
+      model: 'fields',
+      key: 'id'
+    }
+  },
 }, {
   timestamps: true,
   paranoid: true,

@@ -1,4 +1,4 @@
-const { SubChildHeader } = require("../models");
+const { SubChildHeader, Technology, Field } = require("../models");
 const CaseStudy = require("../models/caseStudy");
 const Feedback = require("../models/feedback");
 const Header = require("../models/header");
@@ -71,6 +71,40 @@ exports.relation = () => {
   });
   Industry.belongsTo(Service, {
     foreignKey: "service_id",
+    onDelete: "SET NULL"
+  });
+
+  // Add Technology and SubServices relationship
+  SubServices.hasMany(Technology, {
+    foreignKey: "sub_service_id",
+    onDelete: "CASCADE"
+  });
+  
+  Technology.belongsTo(SubServices, {
+    foreignKey: "sub_service_id",
+    onDelete: "CASCADE"
+  });
+
+  // Add ServiceDetails and SubServices relationship
+  ServiceDetails.belongsToMany(SubServices, {
+    through: "service_details_sub_services",
+    foreignKey: "service_detail_id",
+    otherKey: "sub_service_id"
+  });
+  
+  SubServices.belongsToMany(ServiceDetails, {
+    through: "service_details_sub_services",
+    foreignKey: "sub_service_id",
+    otherKey: "service_detail_id"
+  });
+
+  // Field and Service relationship
+  Field.hasMany(Service, {
+    foreignKey: "field_id",
+    onDelete: "SET NULL"
+  });
+  Service.belongsTo(Field, {
+    foreignKey: "field_id",
     onDelete: "SET NULL"
   });
 

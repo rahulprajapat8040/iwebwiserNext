@@ -2,7 +2,7 @@ const { responseGenerator } = require("../helper/functions.helper.js");
 const { vars } = require("../server/constants.js");
 const { statusCodeVars } = require("../server/statusCode.js");
 const { dataNotExist } = require("../helper/check_existence.helper.js");
-const { ServiceDetails, Service, SubServices } = require("../models/index.js");
+const { ServiceDetails, Service, SubServices, Industry, ServiceFaq, Technology } = require("../models/index.js");
 
 exports.createServiceDetail = async (req, res, next) => {
   try {
@@ -10,6 +10,7 @@ exports.createServiceDetail = async (req, res, next) => {
       service_id,
       sub_service_ids, // Changed from subServiceIds to sub_service_ids
       hero_title,
+      slug,
       hero_description,
       heroButtonText,
       heroButtonLink,
@@ -47,18 +48,6 @@ exports.createServiceDetail = async (req, res, next) => {
       );
     }
 
-    if (existingService) {
-      return responseGenerator(
-        res,
-        "Service detail already exists for this service",
-        statusCodeVars.CONFLICT || 409,
-        {
-          existing_service_detail_id: existingService.id,
-          service_id,
-        }
-      );
-    }
-
     // Ensure sub_service_ids is stored as JSON
     const parsedSubServiceIds = Array.isArray(sub_service_ids)
       ? sub_service_ids
@@ -67,6 +56,7 @@ exports.createServiceDetail = async (req, res, next) => {
     const newServiceDetail = await ServiceDetails.create({
       service_id,
       sub_service_ids: parsedSubServiceIds, // Changed from subServiceIds to sub_service_ids
+      slug,
       hero_title,
       hero_description,
       heroButtonText,
@@ -204,17 +194,22 @@ exports.getServiceDetailById = async (req, res, next) => {
   }
 };
 
-exports.getServiceDetailByServiceId = async (req, res, next) => {
+exports.getServicedetailBySlug = async (req, res, next) => {
   try {
-    const { service_id } = req.params;
+    const { slug } = req.params;
     const serviceDetail = await ServiceDetails.findOne({
       where: {
-        service_id,
+        slug,
       },
       include: [
         {
           model: Service,
           attributes: ["id", "title"],
+          include: [{
+            model: Industry
+          }, {
+            model: ServiceFaq
+          }]
         },
       ],
     });
@@ -224,6 +219,11 @@ exports.getServiceDetailByServiceId = async (req, res, next) => {
         where: {
           id: serviceDetail.sub_service_ids,
         },
+        include: [
+          {
+            model: Technology
+          }
+        ]
       });
       serviceDetail.setDataValue("sub_services", subServices);
     }

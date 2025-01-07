@@ -1,28 +1,33 @@
 const { Sequelize, DataTypes } = require('sequelize');
 const sequelize = require('../config/db');
 
-const Technology = sequelize.define('technology', {
+const Field = sequelize.define('field', {
     id: {
         type: Sequelize.UUID,
         defaultValue: Sequelize.UUIDV4,
         primaryKey: true,
     },
-    sub_service_id: {
-        type: DataTypes.UUID,
-        allowNull: true,
+    slug: {
+        type: DataTypes.STRING,
     },
     title: {
         type: DataTypes.STRING,
     },
-    image :{
+    description: {
+        type: DataTypes.TEXT('long'),
+    },  
+    buttonText: {
+        type: DataTypes.STRING,
+    },
+    buttonLink: {
+        type: DataTypes.STRING,
+    },
+    image: {
         type: DataTypes.STRING,
     }
 }, {
     timestamps: true,
     paranoid: true
-});
+}); 
 
-
-module.exports = Technology;
-
-
+module.exports = Field;

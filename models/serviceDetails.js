@@ -8,6 +8,10 @@ const ServiceDetails = sequelize.define("service_details", {
     primaryKey: true,
     allowNull: false,
   },
+  slug: {
+    type: DataTypes.STRING,
+    allowNull: false,
+  },
   service_id: {
     type: DataTypes.UUID,
     allowNull: false,

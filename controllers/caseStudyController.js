@@ -11,12 +11,19 @@ const {
 } = require("../helper/redis.helper.js");
 const { dataNotExist } = require("../helper/check_existence.helper.js");
 const { CaseStudy, Industry } = require("../models/index.js");
-const { Op } = require('sequelize');
+const { Op } = require("sequelize");
 
 exports.createCaseStudy = async (req, res, next) => {
   try {
-    const { addCaseStudy, userCertificate, challenges, impact, system_phase } =
-      req.body;
+    const {
+      addCaseStudy,
+      userCertificate,
+      challenges,
+      impact,
+      system_phase,
+      addtional_information,
+      slug,
+    } = req.body;
 
     const newCaseStudy = await CaseStudy.create({
       addCaseStudy,
@@ -24,6 +31,8 @@ exports.createCaseStudy = async (req, res, next) => {
       challenges,
       impact,
       system_phase,
+      addtional_information,
+      slug,
       industryId: req.body.industryId,
     });
 
@@ -42,8 +51,15 @@ exports.createCaseStudy = async (req, res, next) => {
 exports.updateCaseStudy = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { addCaseStudy, userCertificate, challenges, impact, system_phase } =
-      req.body;
+    const {
+      addCaseStudy,
+      userCertificate,
+      challenges,
+      impact,
+      system_phase,
+      addtional_information,
+      slug,
+    } = req.body;
 
     const caseStudy = await CaseStudy.findByPk(id);
     dataNotExist(
@@ -58,6 +74,8 @@ exports.updateCaseStudy = async (req, res, next) => {
       challenges,
       impact,
       system_phase,
+      addtional_information,
+      slug,
       industryId: req.body.industryId,
     });
     return responseGenerator(
@@ -117,6 +135,7 @@ exports.getAllCaseStudy = async (req, res, next) => {
         "userCertificate",
         "challenges",
         "impact",
+        "addtional_information",
       ])
     );
 
@@ -142,16 +161,20 @@ exports.getCaseStudyById = async (req, res, next) => {
       );
     }
 
-    const caseStudy = await CaseStudy.findOne({ where: { id } , include: {
-      model: Industry,
-      as:"industry"
-    }});
+    const caseStudy = await CaseStudy.findOne({
+      where: { id },
+      include: {
+        model: Industry,
+        as: "industry",
+      },
+    });
     const parserData = parseIfString(caseStudy, [
       "addCaseStudy",
       "system_phase",
       "userCertificate",
       "challenges",
       "impact",
+      "addtional_information",
     ]);
     dataNotExist(
       parserData,
@@ -159,6 +182,45 @@ exports.getCaseStudyById = async (req, res, next) => {
       statusCodeVars.NOT_FOUND
     );
 
+    return responseGenerator(
+      res,
+      vars.CASE_STUDY_GET,
+      statusCodeVars.OK,
+      caseStudy
+    );
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getCaseStudyBySlug = async (req, res, next) => {
+  try {
+    const { slug } = req.params;
+
+    // Check if id exists
+    if (!slug) {
+      return responseGenerator(
+        res,
+        "Case Study slug is required",
+        statusCodeVars.CASE_STUDY_NOT_FOUND
+      );
+    }
+
+    const caseStudy = await CaseStudy.findOne({
+      where: { slug },
+      include: {
+        model: Industry,
+        as: "industry",
+      },
+    });
+    const parserData = parseIfString(caseStudy, [
+      "addCaseStudy",
+      "system_phase",
+      "userCertificate",
+      "challenges",
+      "impact",
+      "addtional_information",
+    ]);
     return responseGenerator(
       res,
       vars.CASE_STUDY_GET,
@@ -194,13 +256,13 @@ exports.deleteCaseStudy = async (req, res, next) => {
 exports.searchCaseStudyByTitle = async (req, res) => {
   try {
     const { query } = req.query;
-    
+
     if (!query) {
       return res.status(400).json({
         status: 400,
         success: false,
         message: "Search query is required",
-        data: []
+        data: [],
       });
     }
 
@@ -208,14 +270,14 @@ exports.searchCaseStudyByTitle = async (req, res) => {
       where: {
         addCaseStudy: {
           title: {
-            [Op.like]: `%${query}%`
-          }
-        }
+            [Op.like]: `%${query}%`,
+          },
+        },
       },
       include: {
         model: Industry,
         as: "industry",
-      }
+      },
     });
 
     const parserData = results.map((caseStudy) =>
@@ -232,7 +294,7 @@ exports.searchCaseStudyByTitle = async (req, res) => {
       status: 200,
       success: true,
       message: "Case studies fetched successfully",
-      data: parserData
+      data: parserData,
     });
   } catch (error) {
     console.error("Search error:", error);
@@ -240,7 +302,34 @@ exports.searchCaseStudyByTitle = async (req, res) => {
       status: 500,
       success: false,
       message: "Internal server error",
-      error: error.message
+      error: error.message,
+    });
+  }
+};
+
+exports.getCaseIndusty = async (req, res) => {
+  try {
+    const result = await Industry.findAll({
+      include: [
+        {
+          model: CaseStudy,
+          as: "caseStudies",
+        },
+      ],
+    });
+    return responseGenerator(
+      res,
+      vars.CASE_STUDY_GET,
+      statusCodeVars.OK,
+      result
+    );
+  } catch (error) {
+    console.error("Search error:", error);
+    return res.status(500).json({
+      status: 500,
+      success: false,
+      message: "Internal server error",
+      error: error.message,
     });
   }
 };

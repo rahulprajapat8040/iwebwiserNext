@@ -5,7 +5,7 @@ const serviceDetailsController = require('../controllers/serviceDetailsControlle
 router.post('/createServiceDetail', serviceDetailsController.createServiceDetail);
 router.get('/getServiceDetail', serviceDetailsController.getAllServiceDetails);
 router.get('/getserviceDetailById/:id', serviceDetailsController.getServiceDetailById);
-router.get('/getserviceDetailByServiceId/:service_id', serviceDetailsController.getServiceDetailByServiceId);
+router.get('/getServicedetailBySlug/:slug', serviceDetailsController.getServicedetailBySlug);
 router.put('/updateServiceDetail/:id', serviceDetailsController.updateServiceDetail);
 router.delete('/deleteServiceDetail/:id', serviceDetailsController.deleteServiceDetail);
 

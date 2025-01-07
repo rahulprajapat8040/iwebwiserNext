@@ -104,6 +104,12 @@ const vars = {
     USER_DELETE: "DELETE User Successfully",
     USER_NOT_FOUND: "User NOT_FOUND  Successfully",
 
+    FIELD_GET: "GET Field Successfully",
+    FIELD_CREATE: "CREATE Field Successfully",
+    FIELD_UPDATE: "UPDATE Field Successfully",
+    FIELD_DELETE: "DELETE Field Successfully",
+    FIELD_NOT_FOUND: "Field NOT_FOUND Successfully",
+
     PROVIDE_ADMIN: "Admins must provide both username and password or username and email.",
     INVALID_PASSWORD: "Invalid password",
     RESET_PASSWORD: "Password reset successfully",
