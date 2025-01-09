@@ -110,6 +110,12 @@ const vars = {
     FIELD_DELETE: "DELETE Field Successfully",
     FIELD_NOT_FOUND: "Field NOT_FOUND Successfully",
 
+    STEPS_GET: "GET Steps Successfully",
+    STEPS_CREATE: "CREATE Steps Successfully",
+    STEPS_UPDATE: "UPDATE Steps Successfully",
+    STEPS_DELETE: "DELETE Steps Successfully",
+    STEPS_NOT_FOUND: "Steps NOT_FOUND Successfully",
+
     PROVIDE_ADMIN: "Admins must provide both username and password or username and email.",
     INVALID_PASSWORD: "Invalid password",
     RESET_PASSWORD: "Password reset successfully",

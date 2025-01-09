@@ -7,17 +7,18 @@ const {
   deleteCacheData,
 } = require("../helper/redis.helper.js");
 const { dataNotExist } = require("../helper/check_existence.helper.js");
-const { Feedback } = require("../models/index.js");
+const { Feedback, Industry } = require("../models/index.js");
 const { Op } = require('sequelize');
 
 exports.createFeedback = async (req, res, next) => {
   try {
-    const { title, description, sub_title, image } = req.body;
+    const { title, description, sub_title, image, } = req.body;
     const newFeedback = await Feedback.create({
       title,
       description,
       sub_title,
       image,
+      
     });
     return responseGenerator(
       res,
@@ -33,7 +34,7 @@ exports.createFeedback = async (req, res, next) => {
 exports.updateFeedback = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, sub_title, description, button_link, image } = req.body;
+    const { title, sub_title, description, button_link, image, } = req.body;
 
     const feedback = await Feedback.findByPk(id);
     dataNotExist(feedback, vars.FEEDBACK_NOT_FOUND, statusCodeVars.NOT_FOUND);
@@ -44,6 +45,7 @@ exports.updateFeedback = async (req, res, next) => {
       sub_title,
       button_link,
       image,
+      
     });
     return responseGenerator(
       res,
@@ -63,15 +65,17 @@ exports.getAllFeedback = async (req, res, next) => {
     let feedbacks;
     let pageInfo = null;
 
+
     if (showAll === "true") {
-      // Fetch all feedbacks without pagination
-      feedbacks = await Feedback.findAll({ order: [["createdAt", "ASC"]] });  
+      feedbacks = await Feedback.findAll({ 
+        order: [["createdAt", "ASC"]]
+      });  
     } else {
-      // Handle pagination
       const pageNumber = parseInt(page) || 1;
       const pageSize = parseInt(limit) || 10;
 
       const { rows, count: totalItems } = await Feedback.findAndCountAll({
+        include: includeOptions,
         limit: pageSize,
         offset: (pageNumber - 1) * pageSize,
       });

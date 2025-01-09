@@ -7,7 +7,8 @@ const SubHeader = require("../models/subHeader");
 const Service = require("../models/service");
 const ServiceFaq = require("../models/ServiceFaq");
 const SubServices = require("../models/SubServices");
-const ServiceDetails = require('../models/serviceDetails')
+const ServiceDetails = require('../models/serviceDetails');
+const IndustryPage = require('../models/IndustryPage');
 
 exports.relation = () => {
   Header.hasMany(SubHeader, { foreignKey: "headerId", onDelete: "CASCADE" });
@@ -63,17 +64,6 @@ exports.relation = () => {
     foreignKey: "service_id",
     onDelete: "CASCADE",
   });
-
-  // Industry and Service relationship
-  Service.hasMany(Industry, {
-    foreignKey: "service_id",
-    onDelete: "SET NULL"
-  });
-  Industry.belongsTo(Service, {
-    foreignKey: "service_id",
-    onDelete: "SET NULL"
-  });
-
   // Add Technology and SubServices relationship
   SubServices.hasMany(Technology, {
     foreignKey: "sub_service_id",
@@ -106,6 +96,16 @@ exports.relation = () => {
   Service.belongsTo(Field, {
     foreignKey: "field_id",
     onDelete: "SET NULL"
+  });
+
+  // Replace the existing Industry-IndustryPage relationship with:
+  Industry.hasOne(IndustryPage, {
+    foreignKey: "industry_id",
+    onDelete: "CASCADE"
+  });
+  IndustryPage.belongsTo(Industry, {
+    foreignKey: "industry_id",
+    onDelete: "CASCADE"
   });
 
   // Remove all ServiceDetailsSubServices related code

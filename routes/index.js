@@ -16,6 +16,8 @@ const imageRouter = require('./ImageRoute')
 const headerRouter = require('./headerRouter')
 const serviceDetailRouter = require('./servicDetailsRoute')
 const fieldRouter = require('./fieldRoutes')
+const industryPage = require('./industryPageRoutes')
+const steps = require('./setpsRoute')
 
 module.exports = (app) => {
     app.use('/api/v1/header', headerRouter)
@@ -26,6 +28,7 @@ module.exports = (app) => {
     app.use('/api/v1/certificate', certificateRouter)
     app.use('/api/v1/feedback', feedbackRouter)
     app.use('/api/v1/industry', industryRouter);
+    app.use('/api/v1/industryPage', industryPage)
     app.use('/api/v1/ourClient', ourClientRouter)
     app.use('/api/v1/service', serviceRouter)
     app.use('/api/v1/subService', subServiceEouter)
@@ -36,4 +39,5 @@ module.exports = (app) => {
     app.use('/api/v1/field', fieldRouter)
     app.use('/api/v1/admin', adminRoutes);
     app.use('/api/v1/image', imageRouter);
+    app.use('/api/v1/steps', steps);
 };  

@@ -32,7 +32,9 @@ module.exports = {
   Feedback: require("./feedback"), //pages
   CaseStudy: require("./caseStudy"), //industry
   Header: require("./header"),
+  IndustryPage: require('./IndustryPage'),
   SubHeader: require("./subHeader"),
   SubChildHeader: require("./subChildHeader"),
-  Field: require('./field')
+  Field: require('./field'),
+  Steps: require('./Steps')
 };

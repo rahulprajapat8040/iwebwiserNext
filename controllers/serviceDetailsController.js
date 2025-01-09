@@ -205,9 +205,7 @@ exports.getServicedetailBySlug = async (req, res, next) => {
         {
           model: Service,
           attributes: ["id", "title"],
-          include: [{
-            model: Industry
-          }, {
+          include: [ {
             model: ServiceFaq
           }]
         },

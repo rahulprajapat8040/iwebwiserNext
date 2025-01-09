@@ -6,11 +6,19 @@ const { Field, Service, ServiceDetails } = require("../models/index.js");
 
 exports.createField = async (req, res, next) => {
   try {
-    const { title, description, buttonText, buttonLink, image, slug } =
-      req.body;
+    const {
+      title,
+      short_description,
+      description,
+      buttonText,
+      buttonLink,
+      image,
+      slug,
+    } = req.body;
     const newField = await Field.create({
       slug,
       title,
+      short_description,
       description,
       buttonText,
       buttonLink,
@@ -30,14 +38,22 @@ exports.createField = async (req, res, next) => {
 exports.updateField = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, description, buttonText, buttonLink, image, slug } =
-      req.body;
+    const {
+      title,
+      description,
+      short_description,
+      buttonText,
+      buttonLink,
+      image,
+      slug,
+    } = req.body;
 
     const field = await Field.findByPk(id);
     dataNotExist(field, vars.FIELD_NOT_FOUND, statusCodeVars.NOT_FOUND);
 
     const updatedField = await field.update({
       title,
+      short_description,
       description,
       buttonText,
       buttonLink,
@@ -114,11 +130,11 @@ exports.getFieldBySlug = async (req, res, next) => {
           include: [
             {
               model: ServiceDetails,
-              attributes: ["slug"]
-            }
-          ]
-        }
-      ]
+              attributes: ["slug"],
+            },
+          ],
+        },
+      ],
     });
     dataNotExist(field, vars.FIELD_NOT_FOUND, statusCodeVars.NOT_FOUND);
     return responseGenerator(res, vars.FIELD_GET, statusCodeVars.OK, field);

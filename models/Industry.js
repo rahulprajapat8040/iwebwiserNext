@@ -7,15 +7,15 @@ const Industry = sequelize.define('industry', {
         defaultValue: Sequelize.UUIDV4,
         primaryKey: true,
     },
+    service_id: {
+        type: DataTypes.UUID,
+        allowNull: false,
+    },
     title: {
         type: DataTypes.STRING,
     },
     description: {
         type: DataTypes.TEXT('long'),
-    },
-    service_id: {
-        type: DataTypes.UUID,
-        allowNull: true,
     },
     button_link: {
         type: DataTypes.STRING,
