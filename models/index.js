@@ -23,7 +23,7 @@ module.exports = {
   Industry: require("./Industry"),
   Branch: require("./branch"), //pages
   Technology: require("./technology"),
-  SocialMedia: require("./socialMedia"),
+  SocialMedia: require("./SocialMedia"),
   Banner: require("./banner"),
   Blog: require("./blog"),
   User: require("./userModel"),
