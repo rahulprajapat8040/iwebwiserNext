@@ -5,35 +5,30 @@ const { dataNotExist } = require("../helper/check_existence.helper.js");
 const {
   IndustryPage,
   Industry,
-  SubServices,
-  Technology,
+  CaseStudy,
 } = require("../models/index.js");
 
 exports.createIndustryPage = async (req, res, next) => {
   try {
     const {
       industry_id,
-      sub_service_ids,
       hero_title,
       slug,
       hero_description,
       industry_title,
       industry_description,
+      industrySolution
     } = req.body;
 
-    // Ensure sub_service_ids is stored as JSON
-    const parsedSubServiceIds = Array.isArray(sub_service_ids)
-      ? sub_service_ids
-      : [];
 
     const newIndustryPage = await IndustryPage.create({
       industry_id,
-      sub_service_ids: parsedSubServiceIds,
       slug,
       hero_title,
       hero_description,
       industry_title,
       industry_description,
+      industrySolution
     });
 
     return responseGenerator(
@@ -59,6 +54,10 @@ exports.getAllIndustryPages = async (req, res, next) => {
       include: [
         {
           model: Industry,
+          include: [{
+            model: CaseStudy,
+            as: 'caseStudies'
+          }],
           attributes: ["id", "title", "description", "image"],
         },
       ],
@@ -66,42 +65,17 @@ exports.getAllIndustryPages = async (req, res, next) => {
 
     const industryPages = await IndustryPage.findAll(includeOptions);
 
-    // Fetch sub-services data
-    if (industryPages) {
-      const subServicesMap = await SubServices.findAll({
-        where: {
-          id: industryPages.flatMap((page) => page.sub_service_ids),
-        },
-      }).then((services) =>
-        services.reduce((acc, service) => {
-          acc[service.id] = service;
-          return acc;
-        }, {})
-      );
-
-      const mappedIndustryPages = industryPages.map((page) => ({
-        ...page.get(),
-        sub_services: page.sub_service_ids
-          .map((id) => subServicesMap[id])
-          .filter(Boolean),
-      }));
-
-      return responseGenerator(
-        res,
-        "Industry pages retrieved",
-        statusCodeVars.OK,
-        {
-          industryPages: mappedIndustryPages,
-        }
-      );
-    }
+    const parsedIndustryPages = industryPages.map(page => ({
+      ...page.get(),
+      industrySolution: JSON.parse(page.industrySolution)
+    }));
 
     return responseGenerator(
       res,
       "Industry pages retrieved",
       statusCodeVars.OK,
       {
-        industryPages: [],
+        industryPages: parsedIndustryPages,
       }
     );
   } catch (err) {
@@ -117,30 +91,23 @@ exports.getIndustryPageBySlug = async (req, res, next) => {
       include: [
         {
           model: Industry,
+          include: [{
+            model: CaseStudy,
+            as: 'caseStudies'
+
+          }],
           attributes: ["id", "title", "description", "image"], // Updated attributes to match Industry model
         },
       ],
     });
-
-    if (industryPage && industryPage.sub_service_ids?.length > 0) {
-      const subServices = await SubServices.findAll({
-        where: {
-          id: industryPage.sub_service_ids,
-        },
-        include: [
-          {
-            model: Technology,
-          },
-        ],
-      });
-      industryPage.setDataValue("sub_services", subServices);
-    }
 
     dataNotExist(
       industryPage,
       "Industry page not found",
       statusCodeVars.NOT_FOUND
     );
+
+    industryPage.setDataValue("industrySolution", JSON.parse(industryPage.industrySolution));
 
     return responseGenerator(
       res,

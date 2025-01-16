@@ -75,7 +75,6 @@ exports.getAllFeedback = async (req, res, next) => {
       const pageSize = parseInt(limit) || 10;
 
       const { rows, count: totalItems } = await Feedback.findAndCountAll({
-        include: includeOptions,
         limit: pageSize,
         offset: (pageNumber - 1) * pageSize,
       });

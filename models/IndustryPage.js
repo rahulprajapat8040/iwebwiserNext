@@ -11,25 +11,13 @@ const IndustryPage = sequelize.define(
     },
     slug: {
       type: DataTypes.STRING,
-      unique: true,
+      // unique: true,
       allowNull: false,
     },
     industry_id: {
       type: DataTypes.UUID,
       allowNull: false,
-      unique: true, // Add this to ensure one-to-one relationship
-    },
-    sub_service_ids: {
-      type: DataTypes.TEXT,
-      allowNull: true,
-      defaultValue: "[]",
-      get() {
-        const rawValue = this.getDataValue("sub_service_ids");
-        return rawValue ? JSON.parse(rawValue) : [];
-      },
-      set(value) {
-        this.setDataValue("sub_service_ids", JSON.stringify(value || []));
-      },
+      // Removed unique constraint
     },
     hero_title: {
       type: DataTypes.STRING,
@@ -44,7 +32,10 @@ const IndustryPage = sequelize.define(
     },
     industry_description:{
       type: DataTypes.TEXT("long"),
-    }
+    },
+    industrySolution:{
+      type: DataTypes.JSON,
+    },
   },
   {
     timestamps: true,
@@ -52,4 +43,4 @@ const IndustryPage = sequelize.define(
   }
 );
 
-module.exports = IndustryPage
+module.exports = IndustryPage;

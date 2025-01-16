@@ -2,13 +2,12 @@ const { responseGenerator } = require("../helper/functions.helper.js");
 const { vars } = require("../server/constants.js");
 const { statusCodeVars } = require("../server/statusCode.js");
 const { dataNotExist } = require("../helper/check_existence.helper.js");
-const { ServiceDetails, Service, SubServices, Industry, ServiceFaq, Technology } = require("../models/index.js");
+const { ServiceDetails, Service, Industry, ServiceFaq, Technology } = require("../models/index.js");
 
 exports.createServiceDetail = async (req, res, next) => {
   try {
     const {
       service_id,
-      sub_service_ids, // Changed from subServiceIds to sub_service_ids
       hero_title,
       slug,
       hero_description,
@@ -23,6 +22,9 @@ exports.createServiceDetail = async (req, res, next) => {
       serviceIndustryDescription,
       serviceToolTitle,
       serviceToolDescription,
+      stepsWeFollow,
+      serviceSolution,
+      techWeUse,
     } = req.body;
 
     // Verify service exists and log the result
@@ -48,14 +50,8 @@ exports.createServiceDetail = async (req, res, next) => {
       );
     }
 
-    // Ensure sub_service_ids is stored as JSON
-    const parsedSubServiceIds = Array.isArray(sub_service_ids)
-      ? sub_service_ids
-      : [];
-
     const newServiceDetail = await ServiceDetails.create({
       service_id,
-      sub_service_ids: parsedSubServiceIds, // Changed from subServiceIds to sub_service_ids
       slug,
       hero_title,
       hero_description,
@@ -70,6 +66,9 @@ exports.createServiceDetail = async (req, res, next) => {
       serviceIndustryDescription,
       serviceToolTitle,
       serviceToolDescription,
+      stepsWeFollow,
+      serviceSolution,
+      techWeUse,
     });
 
     return responseGenerator(
@@ -106,6 +105,7 @@ exports.getAllServiceDetails = async (req, res, next) => {
 
     if (showAll === "true") {
       serviceDetails = await ServiceDetails.findAll(includeOptions);
+      
     } else {
       const pageNumber = parseInt(page) || 1;
       const pageSize = parseInt(limit) || 10;
@@ -126,26 +126,13 @@ exports.getAllServiceDetails = async (req, res, next) => {
       };
     }
 
-    // If you need sub-services data, fetch it separately
-    if (serviceDetails) {
-      const subServicesMap = await SubServices.findAll({
-        where: {
-          id: serviceDetails.flatMap((detail) => detail.sub_service_ids),
-        },
-      }).then((services) =>
-        services.reduce((acc, service) => {
-          acc[service.id] = service;
-          return acc;
-        }, {})
-      );
-
-      serviceDetails = serviceDetails.map((detail) => ({
-        ...detail.get(),
-        sub_services: detail.sub_service_ids
-          .map((id) => subServicesMap[id])
-          .filter(Boolean),
-      }));
-    }
+    // Parse JSON strings
+    serviceDetails = serviceDetails.map(detail => ({
+      ...detail.toJSON(),
+      stepsWeFollow: JSON.parse(detail.stepsWeFollow),
+      serviceSolution: JSON.parse(detail.serviceSolution),
+      techWeUse: JSON.parse(detail.techWeUse),
+    }));
 
     return responseGenerator(res, vars.SERVICE_DETAILS_GET, statusCodeVars.OK, {
       serviceDetails,
@@ -168,20 +155,16 @@ exports.getServiceDetailById = async (req, res, next) => {
       ],
     });
 
-    if (serviceDetail && serviceDetail.sub_service_ids?.length > 0) {
-      const subServices = await SubServices.findAll({
-        where: {
-          id: serviceDetail.sub_service_ids,
-        },
-      });
-      serviceDetail.setDataValue("sub_services", subServices);
-    }
-
     dataNotExist(
       serviceDetail,
       vars.SERVICE_DETAILS_NOT_FOUND,
       statusCodeVars.NOT_FOUND
     );
+
+    // Parse JSON strings
+    serviceDetail.stepsWeFollow = JSON.parse(serviceDetail.stepsWeFollow);
+    serviceDetail.serviceSolution = JSON.parse(serviceDetail.serviceSolution);
+    serviceDetail.techWeUse = JSON.parse(serviceDetail.techWeUse);
 
     return responseGenerator(
       res,
@@ -212,25 +195,16 @@ exports.getServicedetailBySlug = async (req, res, next) => {
       ],
     });
 
-    if (serviceDetail && serviceDetail.sub_service_ids?.length > 0) {
-      const subServices = await SubServices.findAll({
-        where: {
-          id: serviceDetail.sub_service_ids,
-        },
-        include: [
-          {
-            model: Technology
-          }
-        ]
-      });
-      serviceDetail.setDataValue("sub_services", subServices);
-    }
-
     dataNotExist(
       serviceDetail,
       vars.SERVICE_DETAILS_NOT_FOUND,
       statusCodeVars.NOT_FOUND
     );
+
+    // Parse JSON strings
+    serviceDetail.stepsWeFollow = JSON.parse(serviceDetail.stepsWeFollow);
+    serviceDetail.serviceSolution = JSON.parse(serviceDetail.serviceSolution);
+    serviceDetail.techWeUse = JSON.parse(serviceDetail.techWeUse);
 
     return responseGenerator(
       res,

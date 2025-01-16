@@ -12,21 +12,11 @@ const { Op } = require('sequelize');
 
 exports.createTechnology = async (req, res, next) => {
   try {
-    const { title, image, sub_service_id } = req.body;
-    
-    if (sub_service_id) {
-      const subService = await SubServices.findByPk(sub_service_id);
-      dataNotExist(
-        subService,
-        "SubService not found",
-        statusCodeVars.NOT_FOUND
-      );
-    }
+    const { title, image } = req.body;
 
     const newTechnology = await Technology.create({
       title,
       image,
-      sub_service_id
     });
     return responseGenerator(
       res,
@@ -73,19 +63,13 @@ exports.getAllTechnology = async (req, res, next) => {
       let technologys;
       let pageInfo = null;
   
-      const includeOptions = [{
-        model: SubServices,
-        attributes: ['id', 'title']
-      }];
-  
       if (showAll === "true") {
-        technologys = await Technology.findAll({ include: includeOptions });
+        technologys = await Technology.findAll();
       } else {
         const pageNumber = parseInt(page) || 1;
         const pageSize = parseInt(limit) || 10;
   
         const { rows, count: totalItems } = await Technology.findAndCountAll({
-          include: includeOptions,
           limit: pageSize,
           offset: (pageNumber - 1) * pageSize,
         });
@@ -118,12 +102,7 @@ exports.getTechnologyById = async (req, res, next) => {
   try {
     const { id } = req.params;
 
-    const technology = await Technology.findByPk(id, {
-      include: [{
-        model: SubServices,
-        attributes: ['id', 'title']
-      }]
-    });
+    const technology = await Technology.findByPk(id);
     dataNotExist(
       technology,
       vars.TECHNOLOGY_NOT_FOUND,

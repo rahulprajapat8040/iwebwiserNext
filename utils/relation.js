@@ -64,17 +64,6 @@ exports.relation = () => {
     foreignKey: "service_id",
     onDelete: "CASCADE",
   });
-  // Add Technology and SubServices relationship
-  SubServices.hasMany(Technology, {
-    foreignKey: "sub_service_id",
-    onDelete: "CASCADE"
-  });
-  
-  Technology.belongsTo(SubServices, {
-    foreignKey: "sub_service_id",
-    onDelete: "CASCADE"
-  });
-
   // Add ServiceDetails and SubServices relationship
   ServiceDetails.belongsToMany(SubServices, {
     through: "service_details_sub_services",
