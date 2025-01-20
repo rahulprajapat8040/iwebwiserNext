@@ -10,8 +10,11 @@ const OurClient = sequelize.define('ourClient', {
     title: {
         type: DataTypes.STRING,
     },
-    image :{
+    image: {
         type: DataTypes.STRING,
+    },
+    alt: {
+        type: DataTypes.STRING
     }
 }, {
     timestamps: true,

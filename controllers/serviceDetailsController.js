@@ -25,6 +25,7 @@ exports.createServiceDetail = async (req, res, next) => {
       stepsWeFollow,
       serviceSolution,
       techWeUse,
+      metas,
     } = req.body;
 
     // Verify service exists and log the result
@@ -69,6 +70,7 @@ exports.createServiceDetail = async (req, res, next) => {
       stepsWeFollow,
       serviceSolution,
       techWeUse,
+      metas,
     });
 
     return responseGenerator(

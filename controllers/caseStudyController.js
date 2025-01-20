@@ -23,6 +23,7 @@ exports.createCaseStudy = async (req, res, next) => {
       system_phase,
       addtional_information,
       slug,
+      metas,
     } = req.body;
 
     const newCaseStudy = await CaseStudy.create({
@@ -33,6 +34,7 @@ exports.createCaseStudy = async (req, res, next) => {
       system_phase,
       addtional_information,
       slug,
+      metas,
       industryId: req.body.industryId,
     });
 
@@ -59,6 +61,7 @@ exports.updateCaseStudy = async (req, res, next) => {
       system_phase,
       addtional_information,
       slug,
+      metas,
     } = req.body;
 
     const caseStudy = await CaseStudy.findByPk(id);
@@ -76,6 +79,7 @@ exports.updateCaseStudy = async (req, res, next) => {
       system_phase,
       addtional_information,
       slug,
+      metas,
       industryId: req.body.industryId,
     });
     return responseGenerator(

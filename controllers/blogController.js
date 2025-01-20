@@ -12,12 +12,13 @@ const { Op } = require('sequelize');
 
 exports.createBlog = async (req, res, next) => {
   try {
-    const { title, description, blog_link, image } = req.body;
+    const { title, description, blog_link, image, alt } = req.body;
     const newBlog = await Blog.create({
       title,
       description,
       blog_link,
       image,
+      alt,
     });
     return responseGenerator(res, vars.BLOG_CREATE, statusCodeVars.OK, newBlog);
   } catch (err) {
@@ -28,7 +29,7 @@ exports.createBlog = async (req, res, next) => {
 exports.updateBlog = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, description, blog_link, image } = req.body;
+    const { title, description, blog_link, image, alt } = req.body;
 
     const blog = await Blog.findByPk(id);
     dataNotExist(Blog, vars.BLOG_NOT_FOUND, statusCodeVars.NOT_FOUND);
@@ -38,6 +39,7 @@ exports.updateBlog = async (req, res, next) => {
       description,
       blog_link,
       image,
+      alt,
     });
     return responseGenerator(
       res,
@@ -118,7 +120,7 @@ exports.deleteBlog = async (req, res, next) => {
 exports.searchBlogByTitle = async (req, res) => {
   try {
     const { query } = req.query;
-    
+
     if (!query) {
       return res.status(400).json({
         status: 400,

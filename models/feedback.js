@@ -21,6 +21,9 @@ const Feedback = sequelize.define(
     image: {
       type: DataTypes.STRING,
     },
+    alt: {
+      type: DataTypes.STRING
+    }
   },
   {
     timestamps: true,

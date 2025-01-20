@@ -12,13 +12,13 @@ const { Op } = require("sequelize");
 
 exports.createIndustry = async (req, res, next) => {
   try {
-    const { title, description, button_link, image } = req.body;
+    const { title, description, button_link, image, alt } = req.body;
     const newIndustry = await Industry.create({
       title,
       description,
-
       button_link,
       image,
+      alt,
     });
     return responseGenerator(
       res,
@@ -34,7 +34,7 @@ exports.createIndustry = async (req, res, next) => {
 exports.updateIndustry = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, description, button_link, image } = req.body;
+    const { title, description, button_link, image, alt } = req.body;
 
     const industry = await Industry.findByPk(id);
     dataNotExist(industry, vars.INDUSTRY_NOT_FOUND, statusCodeVars.NOT_FOUND);
@@ -45,6 +45,7 @@ exports.updateIndustry = async (req, res, next) => {
 
       button_link,
       image,
+      alt,
     });
     return responseGenerator(
       res,
@@ -67,11 +68,11 @@ exports.getAllIndustry = async (req, res, next) => {
     if (showAll === "true") {
       // Fetch all industry data without pagination
       industryData = await Industry.findAll({
-        include:[
-            {
-                model: IndustryPage,
-                attributes: ['slug']
-            }
+        include: [
+          {
+            model: IndustryPage,
+            attributes: ['slug']
+          }
         ]
       });
     } else {

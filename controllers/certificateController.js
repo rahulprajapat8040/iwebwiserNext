@@ -12,10 +12,11 @@ const { Op } = require('sequelize');
 
 exports.createCertificate = async (req, res, next) => {
   try {
-    const { title, image } = req.body;
+    const { title, image, alt } = req.body;
     const newCertificate = await Certificate.create({
       title,
       image,
+      alt,
     });
     return responseGenerator(
       res,
@@ -31,7 +32,7 @@ exports.createCertificate = async (req, res, next) => {
 exports.updateCertificate = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, image } = req.body;
+    const { title, image, alt } = req.body;
 
     const certificate = await Certificate.findByPk(id);
     dataNotExist(
@@ -43,6 +44,7 @@ exports.updateCertificate = async (req, res, next) => {
     const updatedCertificate = await certificate.update({
       title,
       image,
+      alt,
     });
     return responseGenerator(
       res,
@@ -143,7 +145,7 @@ exports.deleteCertificate = async (req, res, next) => {
 exports.searchCertificateByTitle = async (req, res) => {
   try {
     const { query } = req.query;
-    
+
     if (!query) {
       return res.status(400).json({
         status: 400,

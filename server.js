@@ -1,6 +1,6 @@
+require('dotenv').config(); // Ensure this is at the top
 const express = require('express');
 const cors = require('cors')
-require('dotenv').config()
 const app = express()
 const path = require('path')
 const redis = require('redis');
@@ -45,4 +45,3 @@ app.listen(PORT, () => {
     console.log(`server running way........ ${PORT}`);
 })
 
-    

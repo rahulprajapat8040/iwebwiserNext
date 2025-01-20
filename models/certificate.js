@@ -10,8 +10,11 @@ const Certificate = sequelize.define('certificate', {
     title: {
         type: DataTypes.STRING,
     },
-    image :{
+    image: {
         type: DataTypes.STRING,
+    },
+    alt: {
+        type: DataTypes.STRING
     }
 }, {
     timestamps: true,

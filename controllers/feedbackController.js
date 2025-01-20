@@ -12,13 +12,14 @@ const { Op } = require('sequelize');
 
 exports.createFeedback = async (req, res, next) => {
   try {
-    const { title, description, sub_title, image, } = req.body;
+    const { title, description, sub_title, image, alt, } = req.body;
     const newFeedback = await Feedback.create({
       title,
       description,
       sub_title,
       image,
-      
+      alt,
+
     });
     return responseGenerator(
       res,
@@ -34,7 +35,7 @@ exports.createFeedback = async (req, res, next) => {
 exports.updateFeedback = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, sub_title, description, button_link, image, } = req.body;
+    const { title, sub_title, description, button_link, image, alt, } = req.body;
 
     const feedback = await Feedback.findByPk(id);
     dataNotExist(feedback, vars.FEEDBACK_NOT_FOUND, statusCodeVars.NOT_FOUND);
@@ -45,7 +46,8 @@ exports.updateFeedback = async (req, res, next) => {
       sub_title,
       button_link,
       image,
-      
+      alt,
+
     });
     return responseGenerator(
       res,
@@ -67,9 +69,9 @@ exports.getAllFeedback = async (req, res, next) => {
 
 
     if (showAll === "true") {
-      feedbacks = await Feedback.findAll({ 
+      feedbacks = await Feedback.findAll({
         order: [["createdAt", "ASC"]]
-      });  
+      });
     } else {
       const pageNumber = parseInt(page) || 1;
       const pageSize = parseInt(limit) || 10;
@@ -136,7 +138,7 @@ exports.deleteFeedback = async (req, res, next) => {
 exports.searchFeedbackByTitle = async (req, res) => {
   try {
     const { query } = req.query;
-    
+
     if (!query) {
       return res.status(400).json({
         status: 400,

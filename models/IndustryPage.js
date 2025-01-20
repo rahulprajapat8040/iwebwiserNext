@@ -36,6 +36,12 @@ const IndustryPage = sequelize.define(
     industrySolution:{
       type: DataTypes.JSON,
     },
+    metas: {
+      type: DataTypes.TEXT, 
+      validate: {
+        len: [0, 1000000000]
+      }
+    }
   },
   {
     timestamps: true,

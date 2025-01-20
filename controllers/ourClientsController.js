@@ -12,10 +12,11 @@ const { Op } = require('sequelize');
 
 exports.createOurClient = async (req, res, next) => {
   try {
-    const { title, image } = req.body;
+    const { title, image, alt } = req.body;
     const newOurClient = await OurClient.create({
       title,
       image,
+      alt,
     });
     return responseGenerator(
       res,
@@ -31,7 +32,7 @@ exports.createOurClient = async (req, res, next) => {
 exports.updateOurClient = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, image } = req.body;
+    const { title, image, alt } = req.body;
 
     const ourClient = await OurClient.findByPk(id);
     dataNotExist(
@@ -43,6 +44,7 @@ exports.updateOurClient = async (req, res, next) => {
     const updatedOurClient = await ourClient.update({
       title,
       image,
+      alt,
     });
     return responseGenerator(
       res,
@@ -143,7 +145,7 @@ exports.deleteOurClient = async (req, res, next) => {
 exports.searchOurClientByTitle = async (req, res) => {
   try {
     const { query } = req.query;
-    
+
     if (!query) {
       return res.status(400).json({
         status: 400,

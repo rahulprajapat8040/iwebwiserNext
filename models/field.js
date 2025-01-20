@@ -18,7 +18,7 @@ const Field = sequelize.define('field', {
     },
     description: {
         type: DataTypes.TEXT('long'),
-    },  
+    },
     buttonText: {
         type: DataTypes.STRING,
     },
@@ -27,10 +27,19 @@ const Field = sequelize.define('field', {
     },
     image: {
         type: DataTypes.STRING,
+    },
+    alt: {
+        type: DataTypes.STRING
+    },
+    metas: {
+        type: DataTypes.TEXT('long'),
+        validate: {
+            len: [0, 1000000000] // Adjusted validation rule to allow longer text
+        }
     }
 }, {
     timestamps: true,
     paranoid: true
-}); 
+});
 
 module.exports = Field;

@@ -6,10 +6,9 @@ const { responseGenerator } = require("../helper/functions.helper");
 const { vars } = require("../server/constants");
 const { statusCodeVars } = require("../server/statusCode");
 const { dataNotExist } = require("../helper/check_existence.helper");
-const User = require("../models/userModel");
 const { generateToken } = require("../services/auth.service");
 const { Op } = require("sequelize");
-
+const { User } = require("../models/index");
 exports.getAlluser = async (req, res, next) => {
   try {
     const users = await User.findAll();
@@ -93,6 +92,8 @@ exports.getUserById = async (req, res, next) => {
   }),
   (exports.login = async (req, res, next) => {
     const { username, password } = req.body;
+    console.log(username)
+
 
     try {
       // Ensure username is provided

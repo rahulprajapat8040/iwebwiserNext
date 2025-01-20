@@ -73,6 +73,12 @@ const ServiceDetails = sequelize.define(
     techWeUse: {
       type: DataTypes.JSON,
     },
+    metas: {
+      type: DataTypes.TEXT('long'),
+      validate: {
+        len: [0, 1000000000] // Adjusted validation rule to allow longer text
+      }
+    }
   },
   {
     timestamps: true,

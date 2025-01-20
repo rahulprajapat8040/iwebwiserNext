@@ -14,6 +14,8 @@ exports.createField = async (req, res, next) => {
       buttonLink,
       image,
       slug,
+      alt,
+      metas,
     } = req.body;
     const newField = await Field.create({
       slug,
@@ -23,6 +25,8 @@ exports.createField = async (req, res, next) => {
       buttonText,
       buttonLink,
       image,
+      alt,
+      metas,
     });
     return responseGenerator(
       res,
@@ -46,6 +50,8 @@ exports.updateField = async (req, res, next) => {
       buttonLink,
       image,
       slug,
+      alt,
+      metas,
     } = req.body;
 
     const field = await Field.findByPk(id);
@@ -59,6 +65,8 @@ exports.updateField = async (req, res, next) => {
       buttonLink,
       image,
       slug,
+      alt,
+      metas,
     });
     return responseGenerator(
       res,

@@ -16,8 +16,11 @@ const Blog = sequelize.define('blog', {
     blog_link: {
         type: DataTypes.STRING,
     },
-    image :{
+    image: {
         type: DataTypes.STRING,
+    },
+    alt: {
+        type: DataTypes.STRING
     }
 }, {
     timestamps: true,

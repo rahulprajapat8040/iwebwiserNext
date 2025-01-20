@@ -14,6 +14,8 @@
 // db.Branch = require('./Branches')
 // module.exports = db;
 
+const User = require("./userModel");
+
 
 module.exports = {
   Service: require("./service"),
@@ -26,7 +28,7 @@ module.exports = {
   SocialMedia: require("./SocialMedia"),
   Banner: require("./banner"),
   Blog: require("./blog"),
-  User: require("./userModel"),
+  User: User,
   OurClient: require("./ourClients"),
   Certificate: require("./certificate"),
   Feedback: require("./feedback"), //pages

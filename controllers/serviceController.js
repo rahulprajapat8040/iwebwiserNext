@@ -12,7 +12,7 @@ const { Service, SubServices, ServiceFaq, Field } = require("../models/index.js"
 
 exports.createService = async (req, res, next) => {
   try {
-    const { title, short_description, long_description, button_link, image, field_id } =
+    const { title, short_description, long_description, button_link, image, field_id, alt } =
       req.body;
     const newService = await Service.create({
       title,
@@ -20,7 +20,8 @@ exports.createService = async (req, res, next) => {
       long_description,
       button_link,
       image,
-      field_id
+      field_id,
+      alt,
     });
     return responseGenerator(
       res,
@@ -36,7 +37,7 @@ exports.createService = async (req, res, next) => {
 exports.updateService = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, short_description, long_description, button_link, image, field_id } =
+    const { title, short_description, long_description, button_link, image, field_id, alt } =
       req.body;
 
     const service = await Service.findByPk(id);
@@ -48,7 +49,8 @@ exports.updateService = async (req, res, next) => {
       long_description,
       button_link,
       image,
-      field_id
+      field_id,
+      alt,
     });
     return responseGenerator(
       res,

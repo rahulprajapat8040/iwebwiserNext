@@ -7,10 +7,6 @@ const Industry = sequelize.define('industry', {
         defaultValue: Sequelize.UUIDV4,
         primaryKey: true,
     },
-    service_id: {
-        type: DataTypes.UUID,
-        allowNull: false,
-    },
     title: {
         type: DataTypes.STRING,
     },
@@ -20,12 +16,16 @@ const Industry = sequelize.define('industry', {
     button_link: {
         type: DataTypes.STRING,
     },
-    image :{
+    image: {
         type: DataTypes.STRING,
+    },
+    alt: {
+        type: DataTypes.STRING
     }
 }, {
     timestamps: true,
-    paranoid: true
+    paranoid: true,
+    tableName: 'industries' // Explicitly define the table name
 });
 
 module.exports = Industry;

@@ -12,11 +12,12 @@ const { Op } = require('sequelize');
 
 exports.createTechnology = async (req, res, next) => {
   try {
-    const { title, image } = req.body;
+    const { title, image, alt } = req.body;
 
     const newTechnology = await Technology.create({
       title,
       image,
+      alt,
     });
     return responseGenerator(
       res,
@@ -32,7 +33,7 @@ exports.createTechnology = async (req, res, next) => {
 exports.updateTechnology = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, image } = req.body;
+    const { title, image, alt } = req.body;
 
     const technology = await Technology.findByPk(id);
     dataNotExist(
@@ -44,6 +45,7 @@ exports.updateTechnology = async (req, res, next) => {
     const updatedTechnology = await technology.update({
       title,
       image,
+      alt,
     });
     return responseGenerator(
       res,
@@ -57,47 +59,47 @@ exports.updateTechnology = async (req, res, next) => {
 };
 
 exports.getAllTechnology = async (req, res, next) => {
-    try {
-      const { page, limit, showAll } = req.query;
-  
-      let technologys;
-      let pageInfo = null;
-  
-      if (showAll === "true") {
-        technologys = await Technology.findAll();
-      } else {
-        const pageNumber = parseInt(page) || 1;
-        const pageSize = parseInt(limit) || 10;
-  
-        const { rows, count: totalItems } = await Technology.findAndCountAll({
-          limit: pageSize,
-          offset: (pageNumber - 1) * pageSize,
-        });
-  
-        technologys = rows;
-        const totalPages = Math.ceil(totalItems / pageSize);
-  
-        pageInfo = {
-          currentPage: pageNumber,
-          totalPages,
-          totalItems,
-        };
-      }
-  
-      return responseGenerator(
-        res,
-        vars.TECHNOLOGY_GET,
-        statusCodeVars.OK,
-        {
-          technologys,
-          pageInfo,
-        }
-      );
-    } catch (err) {
-      next(err);
+  try {
+    const { page, limit, showAll } = req.query;
+
+    let technologys;
+    let pageInfo = null;
+
+    if (showAll === "true") {
+      technologys = await Technology.findAll();
+    } else {
+      const pageNumber = parseInt(page) || 1;
+      const pageSize = parseInt(limit) || 10;
+
+      const { rows, count: totalItems } = await Technology.findAndCountAll({
+        limit: pageSize,
+        offset: (pageNumber - 1) * pageSize,
+      });
+
+      technologys = rows;
+      const totalPages = Math.ceil(totalItems / pageSize);
+
+      pageInfo = {
+        currentPage: pageNumber,
+        totalPages,
+        totalItems,
+      };
     }
-  };
-  
+
+    return responseGenerator(
+      res,
+      vars.TECHNOLOGY_GET,
+      statusCodeVars.OK,
+      {
+        technologys,
+        pageInfo,
+      }
+    );
+  } catch (err) {
+    next(err);
+  }
+};
+
 exports.getTechnologyById = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -144,7 +146,7 @@ exports.deleteTechnology = async (req, res, next) => {
 exports.searchTechnologyByTitle = async (req, res) => {
   try {
     const { query } = req.query;
-    
+
     if (!query) {
       return res.status(400).json({
         status: 400,

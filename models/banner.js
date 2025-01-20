@@ -16,12 +16,15 @@ const Banner = sequelize.define('banner', {
     button_link: {
         type: DataTypes.STRING,
     },
-    status:{
-        type : DataTypes.BOOLEAN,
-        defaultValue : true
+    status: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: true
     },
-    image :{
+    image: {
         type: DataTypes.STRING,
+    },
+    alt: {
+        type: DataTypes.STRING
     }
 }, {
     timestamps: true,

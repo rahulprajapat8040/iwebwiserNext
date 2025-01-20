@@ -17,7 +17,8 @@ exports.createIndustryPage = async (req, res, next) => {
       hero_description,
       industry_title,
       industry_description,
-      industrySolution
+      industrySolution,
+      metas,
     } = req.body;
 
 
@@ -28,7 +29,8 @@ exports.createIndustryPage = async (req, res, next) => {
       hero_description,
       industry_title,
       industry_description,
-      industrySolution
+      industrySolution,
+      metas,
     });
 
     return responseGenerator(

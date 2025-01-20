@@ -23,6 +23,9 @@ const Service = sequelize.define("services", {
   image: {
     type: DataTypes.STRING,
   },
+  alt: {
+    type: DataTypes.STRING
+  },
   field_id: {
     type: DataTypes.UUID,
     allowNull: true,

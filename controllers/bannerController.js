@@ -12,7 +12,7 @@ const { Banner, User } = require("../models/index.js");
 let num = 1;
 exports.createBanner = async (req, res, next) => {
   try {
-    const { title, description, button_link, status, image } = req.body;
+    const { title, description, button_link, status, image, alt } = req.body;
 
     // Check if a banner already exists
     const existingBanner = await Banner.findOne();
@@ -30,6 +30,7 @@ exports.createBanner = async (req, res, next) => {
       button_link,
       status,
       image,
+      alt,
     });
 
     return responseGenerator(
@@ -46,7 +47,7 @@ exports.createBanner = async (req, res, next) => {
 exports.updateBanner = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, description, button_link, status, image } = req.body;
+    const { title, description, button_link, status, image, alt } = req.body;
 
     const banner = await Banner.findByPk(id);
     dataNotExist(Banner, vars.BANNER_NOT_FOUND, statusCodeVars.NOT_FOUND);
@@ -57,6 +58,7 @@ exports.updateBanner = async (req, res, next) => {
       button_link,
       status,
       image,
+      alt,
     });
     return responseGenerator(
       res,

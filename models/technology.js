@@ -14,8 +14,11 @@ const Technology = sequelize.define('technology', {
     title: {
         type: DataTypes.STRING,
     },
-    image :{
+    image: {
         type: DataTypes.STRING,
+    },
+    alt: {
+        type: DataTypes.STRING
     }
 }, {
     timestamps: true,
