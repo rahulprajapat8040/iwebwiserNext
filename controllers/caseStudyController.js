@@ -224,6 +224,8 @@ exports.getCaseStudyBySlug = async (req, res, next) => {
       "challenges",
       "impact",
       "addtional_information",
+      "metas"
+      
     ]);
     return responseGenerator(
       res,
