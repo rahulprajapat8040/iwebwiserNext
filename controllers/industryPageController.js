@@ -69,7 +69,7 @@ exports.getAllIndustryPages = async (req, res, next) => {
 
     const parsedIndustryPages = industryPages.map(page => ({
       ...page.get(),
-      industrySolution: JSON.parse(page.industrySolution)
+      industrySolution: page.industrySolution
     }));
 
     return responseGenerator(
