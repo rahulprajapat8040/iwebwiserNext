@@ -129,12 +129,7 @@ exports.getAllServiceDetails = async (req, res, next) => {
     }
 
     // Parse JSON strings
-    serviceDetails = serviceDetails.map(detail => ({
-      ...detail.toJSON(),
-      stepsWeFollow: JSON.parse(detail.stepsWeFollow),
-      serviceSolution: JSON.parse(detail.serviceSolution),
-      techWeUse: JSON.parse(detail.techWeUse),
-    }));
+ 
 
     return responseGenerator(res, vars.SERVICE_DETAILS_GET, statusCodeVars.OK, {
       serviceDetails,
@@ -163,10 +158,7 @@ exports.getServiceDetailById = async (req, res, next) => {
       statusCodeVars.NOT_FOUND
     );
 
-    // Parse JSON strings
-    serviceDetail.stepsWeFollow = JSON.parse(serviceDetail.stepsWeFollow);
-    serviceDetail.serviceSolution = JSON.parse(serviceDetail.serviceSolution);
-    serviceDetail.techWeUse = JSON.parse(serviceDetail.techWeUse);
+   
 
     return responseGenerator(
       res,
@@ -204,9 +196,7 @@ exports.getServicedetailBySlug = async (req, res, next) => {
     );
 
     // Parse JSON strings
-    serviceDetail.stepsWeFollow = JSON.parse(serviceDetail.stepsWeFollow);
-    serviceDetail.serviceSolution = JSON.parse(serviceDetail.serviceSolution);
-    serviceDetail.techWeUse = JSON.parse(serviceDetail.techWeUse);
+  
 
     return responseGenerator(
       res,
