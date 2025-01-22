@@ -2,7 +2,7 @@ const { responseGenerator } = require("../helper/functions.helper.js");
 const { vars } = require("../server/constants.js");
 const { statusCodeVars } = require("../server/statusCode.js");
 const { dataNotExist } = require("../helper/check_existence.helper.js");
-const { ServiceDetails, Service, Industry, ServiceFaq, Technology } = require("../models/index.js");
+const { ServiceDetails, Service, Industry, ServiceFaq, Technology, Field } = require("../models/index.js");
 
 exports.createServiceDetail = async (req, res, next) => {
   try {
@@ -98,6 +98,11 @@ exports.getAllServiceDetails = async (req, res, next) => {
       include: [
         {
           model: Service,
+          include: [
+            {
+              model: Field
+            }
+          ]
         },
       ],
     };
