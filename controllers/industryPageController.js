@@ -109,7 +109,6 @@ exports.getIndustryPageBySlug = async (req, res, next) => {
       statusCodeVars.NOT_FOUND
     );
 
-    industryPage.setDataValue("industrySolution", JSON.parse(industryPage.industrySolution));
 
     return responseGenerator(
       res,
