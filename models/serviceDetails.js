@@ -42,7 +42,7 @@ const ServiceDetails = sequelize.define(
       type: DataTypes.STRING,
     },
     ServiceDetailDescription: {
-      type: DataTypes.STRING,
+      type: DataTypes.TEXT("long"),
     },
     ServiceDetailButtonText: {
       type: DataTypes.STRING,
