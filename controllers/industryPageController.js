@@ -16,6 +16,8 @@ exports.createIndustryPage = async (req, res, next) => {
       slug,
       hero_description,
       industry_title,
+      heroBtnText,
+      heroBtnLink,
       industry_description,
       industrySolution,
       metas,
@@ -30,6 +32,8 @@ exports.createIndustryPage = async (req, res, next) => {
       industry_title,
       industry_description,
       industrySolution,
+      heroBtnText,
+      heroBtnLink,
       metas,
     });
 

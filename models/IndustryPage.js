@@ -27,17 +27,23 @@ const IndustryPage = sequelize.define(
       type: DataTypes.TEXT("long"),
       allowNull: false,
     },
-    industry_title:{
+    heroBtnText: {
+      type: DataTypes.STRING
+    },
+    heroBtnLink: {
+      type: DataTypes.STRING
+    },
+    industry_title: {
       type: DataTypes.STRING,
     },
-    industry_description:{
+    industry_description: {
       type: DataTypes.TEXT("long"),
     },
-    industrySolution:{
+    industrySolution: {
       type: DataTypes.JSON,
     },
     metas: {
-      type: DataTypes.TEXT, 
+      type: DataTypes.TEXT,
       validate: {
         len: [0, 1000000000]
       }
