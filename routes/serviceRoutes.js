@@ -13,7 +13,8 @@ router.get('/searchServiceByTitle', serviceController.searchServiceByTitle)
 //create
 router.post('/createService', serviceController.createService);
 
-router.put('/updataService/:id' , serviceController.updateService)
+router.put('/updataService/:id', serviceController.updateService)
+router.put('/swapIndexs', serviceController.reorderServices)
 
 router.delete('/deleteService/:id', serviceController.deleteService);
 

@@ -34,6 +34,14 @@ const Service = sequelize.define("services", {
       key: 'id'
     }
   },
+  index: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+  },
+  hideService: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false
+  }
 }, {
   timestamps: true,
   paranoid: true,

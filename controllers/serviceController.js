@@ -1,6 +1,7 @@
 const { responseGenerator } = require("../helper/functions.helper.js");
 const { vars } = require("../server/constants.js");
 const { statusCodeVars } = require("../server/statusCode.js");
+
 const {
   setCacheData,
   getCacheData,
@@ -12,8 +13,11 @@ const { Service, SubServices, ServiceFaq, Field } = require("../models/index.js"
 
 exports.createService = async (req, res, next) => {
   try {
-    const { title, short_description, long_description, button_link, image, field_id, alt } =
-      req.body;
+    const { title, short_description, long_description, button_link, image, field_id, alt } = req.body;
+
+    // Get the highest index
+    const maxIndex = await Service.max('index') || 0;
+
     const newService = await Service.create({
       title,
       short_description,
@@ -22,13 +26,10 @@ exports.createService = async (req, res, next) => {
       image,
       field_id,
       alt,
+      index: maxIndex + 1  // Set the new index as highest + 1
     });
-    return responseGenerator(
-      res,
-      vars.SERVICE_CREATE,
-      statusCodeVars.OK,
-      newService
-    );
+
+    return responseGenerator(res, vars.SERVICE_CREATE, statusCodeVars.OK, newService);
   } catch (err) {
     next(err);
   }
@@ -37,7 +38,7 @@ exports.createService = async (req, res, next) => {
 exports.updateService = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, short_description, long_description, button_link, image, field_id, alt } =
+    const { title, short_description, long_description, button_link, image, field_id, alt, hideService } =
       req.body;
 
     const service = await Service.findByPk(id);
@@ -50,6 +51,7 @@ exports.updateService = async (req, res, next) => {
       button_link,
       image,
       field_id,
+      hideService,
       alt,
     });
     return responseGenerator(
@@ -71,9 +73,8 @@ exports.getAllService = async (req, res, next) => {
     let pageInfo = null;
 
     if (showAll === "true") {
-      // Fetch all services without pagination
       services = await Service.findAll({
-        order: [["createdAt", "ASC"]],
+        order: [["index", "ASC"]], // Changed from createdAt to index
         include: [
           {
             model: SubServices,
@@ -89,11 +90,11 @@ exports.getAllService = async (req, res, next) => {
         ],
       });
     } else {
-      // Handle pagination
       const pageNumber = parseInt(page) || 1;
       const pageSize = parseInt(limit) || 10;
 
       const { rows, count: totalItems } = await Service.findAndCountAll({
+        order: [["index", "ASC"]], // Changed from createdAt to index
         limit: pageSize,
         offset: (pageNumber - 1) * pageSize,
         include: [
@@ -191,5 +192,47 @@ exports.searchServiceByTitle = async (req, res) => {
       message: "Internal server error",
       error: error.message,
     });
+  }
+};
+
+// Add this new method for reordering
+exports.reorderServices = async (req, res, next) => {
+  try {
+    const { firstServiceId, secondServiceId } = req.body;
+
+    // Find both services
+    const firstService = await Service.findByPk(firstServiceId);
+    const secondService = await Service.findByPk(secondServiceId);
+
+    if (!firstService || !secondService) {
+      return responseGenerator(
+        res,
+        'One or both services not found',
+        statusCodeVars.NOT_FOUND
+      );
+    }
+
+    // Store the original indices
+    const firstIndex = firstService.index;
+    const secondIndex = secondService.index;
+
+    // Use Service.sequelize instead of direct sequelize reference
+    await Service.sequelize.transaction(async (t) => {
+      await firstService.update({ index: secondIndex }, { transaction: t });
+      await secondService.update({ index: firstIndex }, { transaction: t });
+    });
+
+    const updatedServices = await Service.findAll({
+      order: [['index', 'ASC']]
+    });
+
+    return responseGenerator(
+      res,
+      'Services reordered successfully',
+      statusCodeVars.OK,
+      updatedServices
+    );
+  } catch (err) {
+    next(err);
   }
 };

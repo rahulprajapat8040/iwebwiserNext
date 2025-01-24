@@ -85,6 +85,8 @@ exports.getAllField = async (req, res, next) => {
       include: [
         {
           model: Service,
+          separate: true,
+          order: [['index', 'ASC']],
           include: [
             {
               model: ServiceDetails,
@@ -135,6 +137,8 @@ exports.getFieldBySlug = async (req, res, next) => {
       include: [
         {
           model: Service,
+          separate: true,
+          order: [['index', 'ASC']],
           include: [
             {
               model: ServiceDetails,
