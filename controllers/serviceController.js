@@ -9,7 +9,7 @@ const {
 } = require("../helper/redis.helper.js");
 const { dataNotExist } = require("../helper/check_existence.helper.js");
 const { Op } = require("sequelize");
-const { Service, SubServices, ServiceFaq, Field } = require("../models/index.js");
+const { Service, SubServices, ServiceFaq, Field, ServiceDetails } = require("../models/index.js");
 
 exports.createService = async (req, res, next) => {
   try {
@@ -86,6 +86,10 @@ exports.getAllService = async (req, res, next) => {
           {
             model: Field,
             attributes: ["id", "title", "description"],
+          },
+          {
+            model: ServiceDetails,
+            attributes: ["slug"]
           }
         ],
       });

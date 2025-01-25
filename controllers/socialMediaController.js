@@ -28,7 +28,7 @@ exports.getActiveSocialMedia = async (req, res, next) => {
     const socialData = await SocialMedia.findAll({
       where: { active: true },
       order: [["createdAt", "ASC"]],
-    });
+    }); 
     responseGenerator(
       res,
       vars.SOCIAL_MEDIA_GET,
@@ -129,7 +129,7 @@ exports.deleteSocialMedia = async (req, res, next) => {
 exports.searchSocialMedia = async (req, res) => {
   try {
     const { query } = req.query;
-    
+
     if (!query) {
       return res.status(400).json({
         status: 400,
