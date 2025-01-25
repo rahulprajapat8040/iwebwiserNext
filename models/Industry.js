@@ -21,6 +21,12 @@ const Industry = sequelize.define('industry', {
     },
     alt: {
         type: DataTypes.STRING
+    },
+    icon: {
+        type: DataTypes.STRING
+    },
+    iconAlt: {
+        type: DataTypes.STRING
     }
 }, {
     timestamps: true,
