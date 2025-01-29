@@ -13,6 +13,9 @@ router.post('/createBlog', blogController.createBlog);
 
 router.put('/updataBlog/:id' , blogController.updateBlog)
 
+// reorder blogs
+router.put('/swapIndexs', blogController.reorderBlogs)
+
 router.delete('/deleteBlog/:id', blogController.deleteBlog);
 
 module.exports = router;

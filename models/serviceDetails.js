@@ -78,6 +78,11 @@ const ServiceDetails = sequelize.define(
       validate: {
         len: [0, 1000000000] // Adjusted validation rule to allow longer text
       }
+    },
+    index: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0
     }
   },
   {

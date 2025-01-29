@@ -19,6 +19,11 @@ const Technology = sequelize.define('technology', {
     },
     alt: {
         type: DataTypes.STRING
+    },
+    index: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
     }
 }, {
     timestamps: true,

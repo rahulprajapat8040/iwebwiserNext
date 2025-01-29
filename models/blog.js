@@ -21,6 +21,11 @@ const Blog = sequelize.define('blog', {
     },
     alt: {
         type: DataTypes.STRING
+    },
+    index: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
     }
 }, {
     timestamps: true,

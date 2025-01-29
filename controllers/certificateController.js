@@ -8,15 +8,20 @@ const {
 } = require("../helper/redis.helper.js");
 const { dataNotExist } = require("../helper/check_existence.helper.js");
 const { Certificate } = require("../models/index.js");
-const { Op } = require('sequelize');
+const { Op, sequelize } = require('sequelize');
 
 exports.createCertificate = async (req, res, next) => {
   try {
     const { title, image, alt } = req.body;
+    
+    // Get the highest index
+    const maxIndex = await Certificate.max('index') || 0;
+    
     const newCertificate = await Certificate.create({
       title,
       image,
       alt,
+      index: maxIndex + 1  // Set the new index as highest + 1
     });
     return responseGenerator(
       res,
@@ -67,7 +72,7 @@ exports.getAllCertificate = async (req, res, next) => {
     if (showAll === "true") {
       // Fetch all certificates without pagination
       certificates = await Certificate.findAll({
-        order: [["createdAt", "ASC"]],
+        order: [["index", "ASC"]],  // Order by index ascending
       });
     } else {
       // Handle pagination
@@ -77,7 +82,7 @@ exports.getAllCertificate = async (req, res, next) => {
       const { rows, count: totalItems } = await Certificate.findAndCountAll({
         limit: pageSize,
         offset: (pageNumber - 1) * pageSize,
-        order: [["createdAt", "ASC"]],
+        order: [["index", "ASC"]],  // Order by index ascending
       });
 
       certificates = rows;
@@ -160,7 +165,8 @@ exports.searchCertificateByTitle = async (req, res) => {
         title: {
           [Op.like]: `%${query}%`
         }
-      }
+      },
+      order: [["index", "ASC"]]  // Order by index ascending
     });
 
     return res.status(200).json({
@@ -177,5 +183,47 @@ exports.searchCertificateByTitle = async (req, res) => {
       message: "Internal server error",
       error: error.message
     });
+  }
+};
+
+// New function to reorder certificates
+exports.reorderCertificates = async (req, res, next) => {
+  try {
+    const { firstCertificateId, secondCertificateId } = req.body;
+
+    // Find both certificates
+    const firstCertificate = await Certificate.findByPk(firstCertificateId);
+    const secondCertificate = await Certificate.findByPk(secondCertificateId);
+
+    if (!firstCertificate || !secondCertificate) {
+      return responseGenerator(
+        res,
+        'One or both certificates not found',
+        statusCodeVars.NOT_FOUND
+      );
+    }
+
+    // Store the original indices
+    const firstIndex = firstCertificate.index;
+    const secondIndex = secondCertificate.index;
+
+    // Use Certificate.sequelize instead of direct sequelize reference
+    await Certificate.sequelize.transaction(async (t) => {
+      await firstCertificate.update({ index: secondIndex }, { transaction: t });
+      await secondCertificate.update({ index: firstIndex }, { transaction: t });
+    });
+
+    const updatedCertificates = await Certificate.findAll({
+      order: [['index', 'ASC']]
+    });
+
+    return responseGenerator(
+      res,
+      'Certificates reordered successfully',
+      statusCodeVars.OK,
+      updatedCertificates
+    );
+  } catch (err) {
+    next(err);
   }
 };

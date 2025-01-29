@@ -8,15 +8,20 @@ const {
 } = require("../helper/redis.helper.js");
 const { dataNotExist } = require("../helper/check_existence.helper.js");
 const { OurClient } = require("../models/index.js");
-const { Op } = require('sequelize');
+const { Op, sequelize } = require('sequelize');
 
 exports.createOurClient = async (req, res, next) => {
   try {
     const { title, image, alt } = req.body;
+    
+    // Get the highest index
+    const maxIndex = await OurClient.max('index') || 0;
+    
     const newOurClient = await OurClient.create({
       title,
       image,
       alt,
+      index: maxIndex + 1  // Set the new index as highest + 1
     });
     return responseGenerator(
       res,
@@ -67,7 +72,7 @@ exports.getAllOurClient = async (req, res, next) => {
     if (showAll === "true") {
       // Fetch all client data without pagination
       ourClients = await OurClient.findAll({
-        order: [["createdAt", "ASC"]],
+        order: [["index", "ASC"]],  // Order by index ascending
       });
     } else {
       // Handle pagination
@@ -77,7 +82,7 @@ exports.getAllOurClient = async (req, res, next) => {
       const { rows, count: totalItems } = await OurClient.findAndCountAll({
         limit: pageSize,
         offset: (pageNumber - 1) * pageSize,
-        order: [["createdAt", "ASC"]],
+        order: [["index", "ASC"]],  // Order by index ascending
       });
 
       ourClients = rows;
@@ -160,7 +165,8 @@ exports.searchOurClientByTitle = async (req, res) => {
         title: {
           [Op.like]: `%${query}%`
         }
-      }
+      },
+      order: [["index", "ASC"]]  // Order by index ascending
     });
 
     return res.status(200).json({
@@ -177,5 +183,47 @@ exports.searchOurClientByTitle = async (req, res) => {
       message: "Internal server error",
       error: error.message
     });
+  }
+};
+
+// New function to reorder clients
+exports.reorderClients = async (req, res, next) => {
+  try {
+    const { firstClientId, secondClientId } = req.body;
+
+    // Find both clients
+    const firstClient = await OurClient.findByPk(firstClientId);
+    const secondClient = await OurClient.findByPk(secondClientId);
+
+    if (!firstClient || !secondClient) {
+      return responseGenerator(
+        res,
+        'One or both clients not found',
+        statusCodeVars.NOT_FOUND
+      );
+    }
+
+    // Store the original indices
+    const firstIndex = firstClient.index;
+    const secondIndex = secondClient.index;
+
+    // Use OurClient.sequelize instead of direct sequelize reference
+    await OurClient.sequelize.transaction(async (t) => {
+      await firstClient.update({ index: secondIndex }, { transaction: t });
+      await secondClient.update({ index: firstIndex }, { transaction: t });
+    });
+
+    const updatedClients = await OurClient.findAll({
+      order: [['index', 'ASC']]
+    });
+
+    return responseGenerator(
+      res,
+      'Clients reordered successfully',
+      statusCodeVars.OK,
+      updatedClients
+    );
+  } catch (err) {
+    next(err);
   }
 };

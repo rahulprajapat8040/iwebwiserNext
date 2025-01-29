@@ -11,6 +11,7 @@ router.get("/searchSoicalMedia", socialMediaController.searchSocialMedia);
 router.get("/getsocialMedia/:id", socialMediaController.getSocialMediaById);
 
 router.put("/updatasocialMedia", socialMediaController.updateSocialMedia);
+router.put("/reorder", socialMediaController.reorderSocialMedia);
 
 router.delete(
   "/deletesocialMedia/:id",

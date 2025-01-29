@@ -16,6 +16,9 @@ router.post("/createIndustry", industryController.createIndustry);
 
 router.put("/updataIndustry/:id", industryController.updateIndustry);
 
+// reorder industries
+router.put("/swapIndexs", industryController.reorderIndustries);
+
 router.delete("/deleteIndustry/:id", industryController.deleteIndustry);
 
 module.exports = router;

@@ -22,7 +22,7 @@ const Branch = sequelize.define(
       type: DataTypes.STRING,
     },
     zip_code: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.STRING,
       defaultValue: null
     },
     country: {
@@ -31,6 +31,11 @@ const Branch = sequelize.define(
     pageId: {
       type: DataTypes.STRING,
     },
+    index: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0
+    }
   },
   {
     timestamps: true,

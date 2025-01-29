@@ -1,20 +1,17 @@
 const express = require("express");
 const router = express.Router();
-const technologyController = require("../controllers/technologyController");
-const { uploadMedia } = require("../Middleware/uploadImages");
+const technologyController = require("../controllers/technologyController.js");
 
-// get
-router.get("/getAlltechnology", technologyController.getAllTechnology);
+// Get routes
+router.get("/getAllTechnology", technologyController.getAllTechnology);
+router.get("/active", technologyController.getActiveTechnology);
+router.get("/searchtechnology", technologyController.searchTechnology);
+router.get("/:id", technologyController.getTechnologyById);
 
-router.get("/gettechnology/:id", technologyController.getTechnologyById);
-
-router.get("/searchtechnology", technologyController.searchTechnologyByTitle);
-
-//create
+// Protected routes
 router.post("/createtechnology", technologyController.createTechnology);
-
-router.put("/updatatechnology/:id", technologyController.updateTechnology);
-
-router.delete("/deletetechnology/:id", technologyController.deleteTechnology);
+router.put("/updataTechnology/:id", technologyController.updateTechnology);
+router.delete("/deleteTechnology/:id", technologyController.deleteTechnology);
+router.put("/swapIndexs", technologyController.reorderTechnologies);
 
 module.exports = router;

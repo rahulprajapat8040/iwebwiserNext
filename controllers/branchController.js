@@ -8,11 +8,15 @@ const {
 } = require("../helper/redis.helper.js");
 const { dataNotExist } = require("../helper/check_existence.helper.js");
 const { Branch } = require("../models/index.js");
-const { Op } = require("sequelize");
+const { Op, sequelize } = require("sequelize");
 
 exports.createBranch = async (req, res, next) => {
   try {
     const { title, address, city, state, zip_code, country, pageId } = req.body;
+    
+    // Get the highest index
+    const maxIndex = await Branch.max('index') || 0;
+    
     const newBranch = await Branch.create({
       title,
       address,
@@ -21,6 +25,7 @@ exports.createBranch = async (req, res, next) => {
       zip_code,
       country,
       pageId,
+      index: maxIndex + 1  // Set the new index as highest + 1
     });
     return responseGenerator(
       res,
@@ -48,11 +53,11 @@ exports.updateBranch = async (req, res, next) => {
       city,
       zip_code,
       country,
-      pageId,
+      pageId
     });
     return responseGenerator(
       res,
-      vars.BRANCH_UPDATAE,
+      vars.BRANCH_UPDATE,
       statusCodeVars.OK,
       branch
     );
@@ -70,7 +75,9 @@ exports.getAllBranch = async (req, res, next) => {
 
     if (showAll === "true") {
       // Fetch all branches without pagination
-      branches = await Branch.findAll();
+      branches = await Branch.findAll({
+        order: [["index", "ASC"]]  // Order by index ascending
+      });
     } else {
       // Handle pagination
       const pageNumber = parseInt(page) || 1;
@@ -79,7 +86,7 @@ exports.getAllBranch = async (req, res, next) => {
       const { rows, count: totalItems } = await Branch.findAndCountAll({
         limit: pageSize,
         offset: (pageNumber - 1) * pageSize,
-        order: [["createdAt", "ASC"]],
+        order: [["index", "ASC"]],  // Order by index ascending
       });
 
       branches = rows;
@@ -199,5 +206,47 @@ exports.searchBranch = async (req, res) => {
       message: "Internal server error",
       error: error.message,
     });
+  }
+};
+
+// New function to reorder branches
+exports.reorderBranches = async (req, res, next) => {
+  try {
+    const { firstBranchId, secondBranchId } = req.body;
+
+    // Find both branches
+    const firstBranch = await Branch.findByPk(firstBranchId);
+    const secondBranch = await Branch.findByPk(secondBranchId);
+
+    if (!firstBranch || !secondBranch) {
+      return responseGenerator(
+        res,
+        'One or both branches not found',
+        statusCodeVars.NOT_FOUND
+      );
+    }
+
+    // Store the original indices
+    const firstIndex = firstBranch.index;
+    const secondIndex = secondBranch.index;
+
+    // Use Branch.sequelize instead of direct sequelize reference
+    await Branch.sequelize.transaction(async (t) => {
+      await firstBranch.update({ index: secondIndex }, { transaction: t });
+      await secondBranch.update({ index: firstIndex }, { transaction: t });
+    });
+
+    const updatedBranches = await Branch.findAll({
+      order: [['index', 'ASC']]
+    });
+
+    return responseGenerator(
+      res,
+      'Branches reordered successfully',
+      statusCodeVars.OK,
+      updatedBranches
+    );
+  } catch (err) {
+    next(err);
   }
 };

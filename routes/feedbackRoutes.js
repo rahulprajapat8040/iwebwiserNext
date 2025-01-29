@@ -15,7 +15,9 @@ router.post('/createFeedback', feedbackController.createFeedback);
 
 router.put('/updataFeedback/:id' , feedbackController.updateFeedback)
 
-router.delete('/deleteFeedback/:id', feedbackController.deleteFeedback);
+// reorder feedbacks
+router.put('/swapIndexs', feedbackController.reorderFeedbacks)
 
+router.delete('/deleteFeedback/:id', feedbackController.deleteFeedback);
 
 module.exports = router;

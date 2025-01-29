@@ -8,17 +8,22 @@ const {
 } = require("../helper/redis.helper.js");
 const { dataNotExist } = require("../helper/check_existence.helper.js");
 const { Technology, SubServices } = require("../models/index.js");
-const { Op } = require('sequelize');
+const { Op, sequelize } = require('sequelize');
 
 exports.createTechnology = async (req, res, next) => {
   try {
     const { title, image, alt } = req.body;
-
+    
+    // Get the highest index
+    const maxIndex = await Technology.max('index') || 0;
+    
     const newTechnology = await Technology.create({
       title,
       image,
       alt,
+      index: maxIndex + 1  // Set the new index as highest + 1
     });
+
     return responseGenerator(
       res,
       vars.TECHNOLOGY_CREATE,
@@ -47,9 +52,10 @@ exports.updateTechnology = async (req, res, next) => {
       image,
       alt,
     });
+
     return responseGenerator(
       res,
-      vars.TECHNOLOGY_UPDATAE,
+      vars.TECHNOLOGY_UPDATE,
       statusCodeVars.OK,
       updatedTechnology
     );
@@ -66,7 +72,9 @@ exports.getAllTechnology = async (req, res, next) => {
     let pageInfo = null;
 
     if (showAll === "true") {
-      technologys = await Technology.findAll();
+      technologys = await Technology.findAll({
+        order: [["index", "ASC"]],  // Order by index ascending
+      });
     } else {
       const pageNumber = parseInt(page) || 1;
       const pageSize = parseInt(limit) || 10;
@@ -74,6 +82,7 @@ exports.getAllTechnology = async (req, res, next) => {
       const { rows, count: totalItems } = await Technology.findAndCountAll({
         limit: pageSize,
         offset: (pageNumber - 1) * pageSize,
+        order: [["index", "ASC"]],  // Order by index ascending
       });
 
       technologys = rows;
@@ -86,14 +95,26 @@ exports.getAllTechnology = async (req, res, next) => {
       };
     }
 
+    return responseGenerator(res, vars.TECHNOLOGY_GET, statusCodeVars.OK, {
+      technologys,
+      pageInfo,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getActiveTechnology = async (req, res, next) => {
+  try {
+    const technologies = await Technology.findAll({
+      where: { active: true },
+      order: [["index", "ASC"]],  // Order by index ascending
+    });
     return responseGenerator(
       res,
       vars.TECHNOLOGY_GET,
       statusCodeVars.OK,
-      {
-        technologys,
-        pageInfo,
-      }
+      technologies
     );
   } catch (err) {
     next(err);
@@ -125,12 +146,14 @@ exports.getTechnologyById = async (req, res, next) => {
 exports.deleteTechnology = async (req, res, next) => {
   try {
     const { id } = req.params;
+
     const technology = await Technology.findByPk(id);
     dataNotExist(
       technology,
       vars.TECHNOLOGY_NOT_FOUND,
       statusCodeVars.NOT_FOUND
     );
+
     await technology.destroy();
     return responseGenerator(
       res,
@@ -143,7 +166,7 @@ exports.deleteTechnology = async (req, res, next) => {
   }
 };
 
-exports.searchTechnologyByTitle = async (req, res) => {
+exports.searchTechnology = async (req, res) => {
   try {
     const { query } = req.query;
 
@@ -158,10 +181,11 @@ exports.searchTechnologyByTitle = async (req, res) => {
 
     const results = await Technology.findAll({
       where: {
-        title: {
-          [Op.like]: `%${query}%`
-        }
-      }
+        [Op.or]: [
+          { title: { [Op.like]: `%${query}%` } }
+        ]
+      },
+      order: [["index", "ASC"]]  // Order by index ascending
     });
 
     return res.status(200).json({
@@ -178,5 +202,47 @@ exports.searchTechnologyByTitle = async (req, res) => {
       message: "Internal server error",
       error: error.message
     });
+  }
+};
+
+// New function to reorder technologies
+exports.reorderTechnologies = async (req, res, next) => {
+  try {
+    const { firstTechnologyId, secondTechnologyId } = req.body;
+
+    // Find both technologies
+    const firstTechnology = await Technology.findByPk(firstTechnologyId);
+    const secondTechnology = await Technology.findByPk(secondTechnologyId);
+
+    if (!firstTechnology || !secondTechnology) {
+      return responseGenerator(
+        res,
+        'One or both technologies not found',
+        statusCodeVars.NOT_FOUND
+      );
+    }
+
+    // Store the original indices
+    const firstIndex = firstTechnology.index;
+    const secondIndex = secondTechnology.index;
+
+    // Use Technology.sequelize instead of direct sequelize reference
+    await Technology.sequelize.transaction(async (t) => {
+      await firstTechnology.update({ index: secondIndex }, { transaction: t });
+      await secondTechnology.update({ index: firstIndex }, { transaction: t });
+    });
+
+    const updatedTechnologies = await Technology.findAll({
+      order: [['index', 'ASC']]
+    });
+
+    return responseGenerator(
+      res,
+      'Technologies reordered successfully',
+      statusCodeVars.OK,
+      updatedTechnologies
+    );
+  } catch (err) {
+    next(err);
   }
 };

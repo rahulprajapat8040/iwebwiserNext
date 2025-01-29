@@ -15,7 +15,9 @@ router.post('/createCertificate', certificateController.createCertificate);
 
 router.put('/updataCertificate/:id' , certificateController.updateCertificate)
 
-router.delete('/deleteCertificate/:id', certificateController.deleteCertificate);
+// reorder certificates
+router.put('/swapIndexs', certificateController.reorderCertificates)
 
+router.delete('/deleteCertificate/:id', certificateController.deleteCertificate);
 
 module.exports = router;

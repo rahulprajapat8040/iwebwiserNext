@@ -14,6 +14,9 @@ router.post('/createField', fieldController.createField);
 
 router.put('/updataField/:id' , fieldController.updateField)
 
+// reorder fields
+router.put('/swapIndexs', fieldController.reorderFields)
+
 router.delete('/deleteField/:id', fieldController.deleteField);      
 
 module.exports = router;

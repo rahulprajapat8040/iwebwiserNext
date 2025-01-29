@@ -18,6 +18,9 @@ router.post('/createCaseStudy', caseStudyController.createCaseStudy);
 
 router.put('/updataCaseStudy/:id' , caseStudyController.updateCaseStudy)
 
+// reorder case studies
+router.put('/swapIndexs', caseStudyController.reorderCaseStudies)
+
 router.delete('/deleteCaseStudy/:id', caseStudyController.deleteCaseStudy);
 
 module.exports = router;

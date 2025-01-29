@@ -15,6 +15,11 @@ const OurClient = sequelize.define('ourClient', {
     },
     alt: {
         type: DataTypes.STRING
+    },
+    index: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
     }
 }, {
     timestamps: true,

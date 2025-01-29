@@ -15,6 +15,9 @@ router.post('/createBranch', branchController.createBranch);
 
 router.put('/updataBranch/:id' , branchController.updateBranch)
 
+// reorder branches
+router.put('/swapIndexs', branchController.reorderBranches)
+
 router.delete('/deleteBranch/:id', branchController.deleteBranch);
 
 module.exports = router;

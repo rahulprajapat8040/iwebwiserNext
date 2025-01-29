@@ -11,7 +11,7 @@ const {
 } = require("../helper/redis.helper.js");
 const { dataNotExist } = require("../helper/check_existence.helper.js");
 const { CaseStudy, Industry } = require("../models/index.js");
-const { Op } = require("sequelize");
+const { Op, sequelize } = require("sequelize");
 
 exports.createCaseStudy = async (req, res, next) => {
   try {
@@ -26,6 +26,9 @@ exports.createCaseStudy = async (req, res, next) => {
       metas,
     } = req.body;
 
+    // Get the highest index
+    const maxIndex = await CaseStudy.max('index') || 0;
+
     const newCaseStudy = await CaseStudy.create({
       addCaseStudy,
       userCertificate,
@@ -36,6 +39,7 @@ exports.createCaseStudy = async (req, res, next) => {
       slug,
       metas,
       industryId: req.body.industryId,
+      index: maxIndex + 1  // Set the new index as highest + 1
     });
 
     const pardata = JSON.stringify(newCaseStudy);
@@ -100,13 +104,16 @@ exports.getAllCaseStudy = async (req, res, next) => {
     let cases;
     let pageInfo = null;
 
+    const includeOptions = {
+      model: Industry,
+      as: "industry"
+    };
+
     if (showAll === "true") {
       // Fetch all case studies without pagination
       cases = await CaseStudy.findAll({
-        include: {
-          model: Industry,
-          as: "industry",
-        },
+        include: includeOptions,
+        order: [["index", "ASC"]]  // Order by index ascending
       });
     } else {
       // Handle pagination
@@ -114,12 +121,10 @@ exports.getAllCaseStudy = async (req, res, next) => {
       const pageSize = parseInt(limit) || 10;
 
       const { rows, count: totalItems } = await CaseStudy.findAndCountAll({
-        include: {
-          model: Industry,
-          as: "industry",
-        },
+        include: includeOptions,
         limit: pageSize,
         offset: (pageNumber - 1) * pageSize,
+        order: [["index", "ASC"]]  // Order by index ascending
       });
 
       cases = rows;
@@ -165,12 +170,14 @@ exports.getCaseStudyById = async (req, res, next) => {
       );
     }
 
+    const includeOptions = {
+      model: Industry,
+      as: "industry"
+    };
+
     const caseStudy = await CaseStudy.findOne({
       where: { id },
-      include: {
-        model: Industry,
-        as: "industry",
-      },
+      include: includeOptions
     });
     const parserData = parseIfString(caseStudy, [
       "addCaseStudy",
@@ -201,7 +208,7 @@ exports.getCaseStudyBySlug = async (req, res, next) => {
   try {
     const { slug } = req.params;
 
-    // Check if id exists
+    // Check if slug exists
     if (!slug) {
       return responseGenerator(
         res,
@@ -210,12 +217,14 @@ exports.getCaseStudyBySlug = async (req, res, next) => {
       );
     }
 
+    const includeOptions = {
+      model: Industry,
+      as: "industry"
+    };
+
     const caseStudy = await CaseStudy.findOne({
       where: { slug },
-      include: {
-        model: Industry,
-        as: "industry",
-      },
+      include: includeOptions
     });
     const parserData = parseIfString(caseStudy, [
       "addCaseStudy",
@@ -225,7 +234,6 @@ exports.getCaseStudyBySlug = async (req, res, next) => {
       "impact",
       "addtional_information",
       "metas"
-      
     ]);
     return responseGenerator(
       res,
@@ -272,6 +280,11 @@ exports.searchCaseStudyByTitle = async (req, res) => {
       });
     }
 
+    const includeOptions = {
+      model: Industry,
+      as: "industry"
+    };
+
     const results = await CaseStudy.findAll({
       where: {
         addCaseStudy: {
@@ -280,10 +293,8 @@ exports.searchCaseStudyByTitle = async (req, res) => {
           },
         },
       },
-      include: {
-        model: Industry,
-        as: "industry",
-      },
+      include: includeOptions,
+      order: [["index", "ASC"]]  // Order by index ascending
     });
 
     const parserData = results.map((caseStudy) =>
@@ -320,8 +331,10 @@ exports.getCaseIndusty = async (req, res) => {
         {
           model: CaseStudy,
           as: "caseStudies",
+          order: [["index", "ASC"]]  // Order case studies by index
         },
       ],
+      order: [["index", "ASC"]]  // Order industries by index
     });
     return responseGenerator(
       res,
@@ -337,5 +350,47 @@ exports.getCaseIndusty = async (req, res) => {
       message: "Internal server error",
       error: error.message,
     });
+  }
+};
+
+// New function to reorder case studies
+exports.reorderCaseStudies = async (req, res, next) => {
+  try {
+    const { firstCaseStudyId, secondCaseStudyId } = req.body;
+
+    // Find both case studies
+    const firstCaseStudy = await CaseStudy.findByPk(firstCaseStudyId);
+    const secondCaseStudy = await CaseStudy.findByPk(secondCaseStudyId);
+
+    if (!firstCaseStudy || !secondCaseStudy) {
+      return responseGenerator(
+        res,
+        'One or both case studies not found',
+        statusCodeVars.NOT_FOUND
+      );
+    }
+
+    // Store the original indices
+    const firstIndex = firstCaseStudy.index;
+    const secondIndex = secondCaseStudy.index;
+
+    // Use CaseStudy.sequelize instead of direct sequelize reference
+    await CaseStudy.sequelize.transaction(async (t) => {
+      await firstCaseStudy.update({ index: secondIndex }, { transaction: t });
+      await secondCaseStudy.update({ index: firstIndex }, { transaction: t });
+    });
+
+    const updatedCaseStudies = await CaseStudy.findAll({
+      order: [['index', 'ASC']]
+    });
+
+    return responseGenerator(
+      res,
+      'Case studies reordered successfully',
+      statusCodeVars.OK,
+      updatedCaseStudies
+    );
+  } catch (err) {
+    next(err);
   }
 };

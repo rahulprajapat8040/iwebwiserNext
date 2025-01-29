@@ -23,6 +23,11 @@ const Feedback = sequelize.define(
     },
     alt: {
       type: DataTypes.STRING
+    },
+    index: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0
     }
   },
   {

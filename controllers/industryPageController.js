@@ -7,6 +7,7 @@ const {
   Industry,
   CaseStudy,
 } = require("../models/index.js");
+const { sequelize } = require("sequelize");
 
 exports.createIndustryPage = async (req, res, next) => {
   try {
@@ -23,6 +24,8 @@ exports.createIndustryPage = async (req, res, next) => {
       metas,
     } = req.body;
 
+    // Get the highest index
+    const maxIndex = await IndustryPage.max('index') || 0;
 
     const newIndustryPage = await IndustryPage.create({
       industry_id,
@@ -35,6 +38,7 @@ exports.createIndustryPage = async (req, res, next) => {
       heroBtnText,
       heroBtnLink,
       metas,
+      index: maxIndex + 1  // Set the new index as highest + 1
     });
 
     return responseGenerator(
@@ -62,11 +66,13 @@ exports.getAllIndustryPages = async (req, res, next) => {
           model: Industry,
           include: [{
             model: CaseStudy,
-            as: 'caseStudies'
+            as: 'caseStudies',
+            order: [["index", "ASC"]]  // Order case studies by index
           }],
           attributes: ["id", "title", "description", "image"],
         },
       ],
+      order: [["index", "ASC"]]  // Order by index ascending
     };
 
     const industryPages = await IndustryPage.findAll(includeOptions);
@@ -99,12 +105,13 @@ exports.getIndustryPageBySlug = async (req, res, next) => {
           model: Industry,
           include: [{
             model: CaseStudy,
-            as: 'caseStudies'
-
+            as: 'caseStudies',
+            order: [["index", "ASC"]]  // Order case studies by index
           }],
-          attributes: ["id", "title", "description", "image"], // Updated attributes to match Industry model
+          attributes: ["id", "title", "description", "image"],
         },
       ],
+      order: [["index", "ASC"]]  // Order by index ascending
     });
 
     dataNotExist(
@@ -112,7 +119,6 @@ exports.getIndustryPageBySlug = async (req, res, next) => {
       "Industry page not found",
       statusCodeVars.NOT_FOUND
     );
-
 
     return responseGenerator(
       res,
@@ -174,6 +180,48 @@ exports.deleteIndustryPage = async (req, res, next) => {
       "Industry page deleted",
       statusCodeVars.OK,
       industryPage
+    );
+  } catch (err) {
+    next(err);
+  }
+};
+
+// New function to reorder industry pages
+exports.reorderIndustryPages = async (req, res, next) => {
+  try {
+    const { firstIndustryPageId, secondIndustryPageId } = req.body;
+
+    // Find both industry pages
+    const firstIndustryPage = await IndustryPage.findByPk(firstIndustryPageId);
+    const secondIndustryPage = await IndustryPage.findByPk(secondIndustryPageId);
+
+    if (!firstIndustryPage || !secondIndustryPage) {
+      return responseGenerator(
+        res,
+        'One or both industry pages not found',
+        statusCodeVars.NOT_FOUND
+      );
+    }
+
+    // Store the original indices
+    const firstIndex = firstIndustryPage.index;
+    const secondIndex = secondIndustryPage.index;
+
+    // Use IndustryPage.sequelize instead of direct sequelize reference
+    await IndustryPage.sequelize.transaction(async (t) => {
+      await firstIndustryPage.update({ index: secondIndex }, { transaction: t });
+      await secondIndustryPage.update({ index: firstIndex }, { transaction: t });
+    });
+
+    const updatedIndustryPages = await IndustryPage.findAll({
+      order: [['index', 'ASC']]
+    });
+
+    return responseGenerator(
+      res,
+      'Industry pages reordered successfully',
+      statusCodeVars.OK,
+      updatedIndustryPages
     );
   } catch (err) {
     next(err);

@@ -15,6 +15,9 @@ router.post('/createOurClient', ourClientController.createOurClient);
 
 router.put('/updataOurClient/:id' , ourClientController.updateOurClient)
 
+// reorder clients
+router.put('/swapIndexs', ourClientController.reorderClients)
+
 router.delete('/deleteOurClient/:id', ourClientController.deleteOurClient);
 
 module.exports = router;

@@ -25,6 +25,11 @@ const ServiceFaq = sequelize.define(
       type: DataTypes.TEXT("long"),
       allowNull: false,
     },
+    index: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0
+    }
   },
   {
     timestamps: true,

@@ -3,6 +3,7 @@ const { vars } = require("../server/constants.js");
 const { statusCodeVars } = require("../server/statusCode.js");
 const { dataNotExist } = require("../helper/check_existence.helper.js");
 const { ServiceDetails, Service, Industry, ServiceFaq, Technology, Field } = require("../models/index.js");
+const { sequelize } = require("sequelize");
 
 exports.createServiceDetail = async (req, res, next) => {
   try {
@@ -28,28 +29,8 @@ exports.createServiceDetail = async (req, res, next) => {
       metas,
     } = req.body;
 
-    // Verify service exists and log the result
-    const existingService = await Service.findByPk(service_id);
-    if (existingService) {
-    }
-
-    if (!existingService) {
-      // Log all services to verify the data
-      const allServices = await Service.findAll({
-        attributes: ["id", "title"],
-      });
-      console.log("Available services:", allServices);
-
-      return responseGenerator(
-        res,
-        "Service not found",
-        statusCodeVars.NOT_FOUND || 404, // Provide fallback
-        {
-          tried_service_id: service_id,
-          available_services: allServices.map((s) => s.id),
-        }
-      );
-    }
+    // Get the highest index
+    const maxIndex = await ServiceDetails.max('index') || 0;
 
     const newServiceDetail = await ServiceDetails.create({
       service_id,
@@ -71,12 +52,13 @@ exports.createServiceDetail = async (req, res, next) => {
       serviceSolution,
       techWeUse,
       metas,
+      index: maxIndex + 1  // Set the new index as highest + 1
     });
 
     return responseGenerator(
       res,
       vars.SERVICE_DETAILS_CREATE || "Service detail created successfully",
-      statusCodeVars.CREATED || 201, // Changed to CREATED status
+      statusCodeVars.CREATED || 201,
       newServiceDetail
     );
   } catch (err) {
@@ -105,6 +87,7 @@ exports.getAllServiceDetails = async (req, res, next) => {
           ]
         },
       ],
+      order: [["index", "ASC"]]  // Order by index ascending
     };
 
     let serviceDetails;
@@ -133,9 +116,6 @@ exports.getAllServiceDetails = async (req, res, next) => {
       };
     }
 
-    // Parse JSON strings
- 
-
     return responseGenerator(res, vars.SERVICE_DETAILS_GET, statusCodeVars.OK, {
       serviceDetails,
       pageInfo,
@@ -163,8 +143,6 @@ exports.getServiceDetailById = async (req, res, next) => {
       statusCodeVars.NOT_FOUND
     );
 
-   
-
     return responseGenerator(
       res,
       vars.SERVICE_DETAILS_GET,
@@ -188,10 +166,12 @@ exports.getServicedetailBySlug = async (req, res, next) => {
           model: Service,
           attributes: ["id", "title"],
           include: [ {
-            model: ServiceFaq
+            model: ServiceFaq,
+            order: [["index", "ASC"]]  // Order FAQs by index
           }]
         },
       ],
+      order: [["index", "ASC"]]  // Order by index ascending
     });
 
     dataNotExist(
@@ -199,9 +179,6 @@ exports.getServicedetailBySlug = async (req, res, next) => {
       vars.SERVICE_DETAILS_NOT_FOUND,
       statusCodeVars.NOT_FOUND
     );
-
-    // Parse JSON strings
-  
 
     return responseGenerator(
       res,
@@ -252,6 +229,48 @@ exports.deleteServiceDetail = async (req, res, next) => {
       vars.SERVICE_DETAILS_DELETE,
       statusCodeVars.OK,
       serviceDetail
+    );
+  } catch (err) {
+    next(err);
+  }
+};
+
+// New function to reorder service details
+exports.reorderServiceDetails = async (req, res, next) => {
+  try {
+    const { firstServiceDetailId, secondServiceDetailId } = req.body;
+
+    // Find both service details
+    const firstServiceDetail = await ServiceDetails.findByPk(firstServiceDetailId);
+    const secondServiceDetail = await ServiceDetails.findByPk(secondServiceDetailId);
+
+    if (!firstServiceDetail || !secondServiceDetail) {
+      return responseGenerator(
+        res,
+        'One or both service details not found',
+        statusCodeVars.NOT_FOUND
+      );
+    }
+
+    // Store the original indices
+    const firstIndex = firstServiceDetail.index;
+    const secondIndex = secondServiceDetail.index;
+
+    // Use ServiceDetails.sequelize instead of direct sequelize reference
+    await ServiceDetails.sequelize.transaction(async (t) => {
+      await firstServiceDetail.update({ index: secondIndex }, { transaction: t });
+      await secondServiceDetail.update({ index: firstIndex }, { transaction: t });
+    });
+
+    const updatedServiceDetails = await ServiceDetails.findAll({
+      order: [['index', 'ASC']]
+    });
+
+    return responseGenerator(
+      res,
+      'Service details reordered successfully',
+      statusCodeVars.OK,
+      updatedServiceDetails
     );
   } catch (err) {
     next(err);

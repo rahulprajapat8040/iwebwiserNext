@@ -7,60 +7,46 @@ const {
   deleteCacheData,
 } = require("../helper/redis.helper.js");
 const { dataNotExist } = require("../helper/check_existence.helper.js");
-const { SocialMedia, User } = require("../models/index.js");
-const { Op } = require('sequelize');
+const { SocialMedia } = require("../models/index.js");
+const { Op, sequelize } = require('sequelize');
 
-const validSocialMediaTypes = ['facebook', 'twitter', 'instagram', 'linkedin', 'youtube'];
 
-exports.getAllSocialMedia = async (req, res, next) => {
+exports.createSocialMedia = async (req, res, next) => {
   try {
-    const socialData = await SocialMedia.findAll();
-    return responseGenerator(res, vars.SOCIAL_MEDIA_GET, statusCodeVars.OK, {
-      socialData
+    const { link, type, active } = req.body;
+    
+    // Get the highest index
+    const maxIndex = await SocialMedia.max('index') || 0;
+    
+    const newSocialMedia = await SocialMedia.create({
+      link,
+      active,
+      index: maxIndex + 1  // Set the new index as highest + 1
     });
-  } catch (error) {
-    next(error);
-  }
-};
-
-exports.getActiveSocialMedia = async (req, res, next) => {
-  try {
-    const socialData = await SocialMedia.findAll({
-      where: { active: true },
-      order: [["createdAt", "ASC"]],
-    }); 
-    responseGenerator(
+    return responseGenerator(
       res,
-      vars.SOCIAL_MEDIA_GET,
+      vars.SOCIAL_MEDIA_CREATE,
       statusCodeVars.OK,
-      socialData
+      newSocialMedia
     );
-  } catch (error) {
-    next(error);
+  } catch (err) {
+    next(err);
   }
 };
 
 //id send by user for body
 exports.updateSocialMedia = async (req, res, next) => {
   try {
-    const { link, active, id, type } = req.body;
-
+    const { link, active, id, title, icon,} = req.body;
+    const maxIndex = await SocialMedia.max('index') || 0;
     // Validate social media type
-    if (type && !validSocialMediaTypes.includes(type)) {
-      return res.status(400).json({
-        status: 400,
-        success: false,
-        message: `Invalid social media type. Must be one of: ${validSocialMediaTypes.join(', ')}`,
-        data: null
-      });
-    }
 
     let socialMedia = await SocialMedia.findByPk(id);
 
     if (socialMedia) {
-      await socialMedia.update({ link, active });
+      await socialMedia.update({ link, active, icon, title });
     } else {
-      socialMedia = await SocialMedia.create({ link, active, type });
+      socialMedia = await SocialMedia.create({ link, active, index: maxIndex + 1, title , icon});
     }
 
     return responseGenerator(
@@ -70,15 +56,64 @@ exports.updateSocialMedia = async (req, res, next) => {
       socialMedia
     );
   } catch (err) {
-    // Check for Sequelize validation errors
-    if (err.name === 'SequelizeValidationError' || err.name === 'SequelizeDatabaseError') {
-      return res.status(400).json({
-        status: 400,
-        success: false,
-        message: "Invalid social media type",
-        error: err.message
+    next(err);
+  }
+};
+
+
+exports.getAllSocialMedia = async (req, res, next) => {
+  try {
+    const { page, limit, showAll } = req.query;
+
+    let socialData;
+    let pageInfo = null;
+
+    if (showAll === "true") {
+      socialData = await SocialMedia.findAll({
+        order: [["index", "ASC"]],  // Order by index ascending
       });
+    } else {
+      const pageNumber = parseInt(page) || 1;
+      const pageSize = parseInt(limit) || 10;
+
+      const { rows, count: totalItems } = await SocialMedia.findAndCountAll({
+        limit: pageSize,
+        offset: (pageNumber - 1) * pageSize,
+        order: [["index", "ASC"]],  // Order by index ascending
+      });
+
+      socialData = rows;
+      const totalPages = Math.ceil(totalItems / pageSize);
+
+      pageInfo = {
+        currentPage: pageNumber,
+        totalPages,
+        totalItems,
+      };
     }
+
+    return responseGenerator(res, vars.SOCIAL_MEDIA_GET, statusCodeVars.OK, {
+      socialData,
+      pageInfo,
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+exports.getActiveSocialMedia = async (req, res, next) => {
+  try {
+    const socialData = await SocialMedia.findAll({
+      where: { active: true },
+      order: [["index", "ASC"]],  // Order by index ascending
+    });
+    return responseGenerator(
+      res,
+      vars.SOCIAL_MEDIA_GET,
+      statusCodeVars.OK,
+      socialData
+    );
+  } catch (err) {
     next(err);
   }
 };
@@ -139,21 +174,20 @@ exports.searchSocialMedia = async (req, res) => {
       });
     }
 
-    const searchConditions = {
-      [Op.or]: [
-        { type: { [Op.like]: `%${query}%` } },
-        { link: { [Op.like]: `%${query}%` } }
-      ]
-    };
-
     const results = await SocialMedia.findAll({
-      where: searchConditions
+      where: {
+        [Op.or]: [
+          { type: { [Op.like]: `%${query}%` } },
+          { link: { [Op.like]: `%${query}%` } }
+        ]
+      },
+      order: [["index", "ASC"]]  // Order by index ascending
     });
 
     return res.status(200).json({
       status: 200,
       success: true,
-      message: "Social media entries fetched successfully",
+      message: "Social media links fetched successfully",
       data: results
     });
   } catch (error) {
@@ -164,5 +198,47 @@ exports.searchSocialMedia = async (req, res) => {
       message: "Internal server error",
       error: error.message
     });
+  }
+};
+
+// New function to reorder social media links
+exports.reorderSocialMedia = async (req, res, next) => {
+  try {
+    const { firstSocialMediaId, secondSocialMediaId } = req.body;
+
+    // Find both social media items
+    const firstSocialMedia = await SocialMedia.findByPk(firstSocialMediaId);
+    const secondSocialMedia = await SocialMedia.findByPk(secondSocialMediaId);
+
+    if (!firstSocialMedia || !secondSocialMedia) {
+      return responseGenerator(
+        res,
+        'One or both social media items not found',
+        statusCodeVars.NOT_FOUND
+      );
+    }
+
+    // Store the original indices
+    const firstIndex = firstSocialMedia.index;
+    const secondIndex = secondSocialMedia.index;
+
+    // Use SocialMedia.sequelize instead of direct sequelize reference
+    await SocialMedia.sequelize.transaction(async (t) => {
+      await firstSocialMedia.update({ index: secondIndex }, { transaction: t });
+      await secondSocialMedia.update({ index: firstIndex }, { transaction: t });
+    });
+
+    const updatedSocialMedia = await SocialMedia.findAll({
+      order: [['index', 'ASC']]
+    });
+
+    return responseGenerator(
+      res,
+      'Social media items reordered successfully',
+      statusCodeVars.OK,
+      updatedSocialMedia
+    );
+  } catch (err) {
+    next(err);
   }
 };

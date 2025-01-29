@@ -14,6 +14,9 @@ router.post("/createIndustryPage", industryPage.createIndustryPage);
 // update
 router.put("/updateIndustryPage/:id", industryPage.updateIndustryPage);
 
+// reorder industry pages
+router.put("/swapIndexs", industryPage.reorderIndustryPages);
+
 // delete
 
 router.delete("/deleteIndustryPage/:id", industryPage.deleteIndustryPage);

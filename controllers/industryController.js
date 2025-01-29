@@ -8,11 +8,15 @@ const {
 } = require("../helper/redis.helper.js");
 const { dataNotExist } = require("../helper/check_existence.helper.js");
 const { Industry, Service, IndustryPage } = require("../models/index.js");
-const { Op } = require("sequelize");
+const { Op, sequelize } = require("sequelize");
 
 exports.createIndustry = async (req, res, next) => {
   try {
     const { title, description, button_link, image, alt, icon, iconAlt } = req.body;
+
+    // Get the highest index
+    const maxIndex = await Industry.max('index') || 0;
+
     const newIndustry = await Industry.create({
       title,
       description,
@@ -20,7 +24,8 @@ exports.createIndustry = async (req, res, next) => {
       image,
       alt,
       icon,
-      iconAlt
+      iconAlt,
+      index: maxIndex + 1  // Set the new index as highest + 1
     });
     return responseGenerator(
       res,
@@ -71,6 +76,7 @@ exports.getAllIndustry = async (req, res, next) => {
     if (showAll === "true") {
       // Fetch all industry data without pagination
       industryData = await Industry.findAll({
+        order: [["index", "ASC"]],  // Order by index ascending
         include: [
           {
             model: IndustryPage,
@@ -84,6 +90,7 @@ exports.getAllIndustry = async (req, res, next) => {
       const pageSize = parseInt(limit) || 10;
 
       const { rows, count: totalItems } = await Industry.findAndCountAll({
+        order: [["index", "ASC"]],  // Order by index ascending
         limit: pageSize,
         offset: (pageNumber - 1) * pageSize,
       });
@@ -161,6 +168,7 @@ exports.searchIndustryByTitle = async (req, res) => {
           [Op.like]: `%${query}%`,
         },
       },
+      order: [["index", "ASC"]]  // Order by index ascending
     });
 
     return res.status(200).json({
@@ -177,5 +185,47 @@ exports.searchIndustryByTitle = async (req, res) => {
       message: "Internal server error",
       error: error.message,
     });
+  }
+};
+
+// New function to reorder industries
+exports.reorderIndustries = async (req, res, next) => {
+  try {
+    const { firstIndustryId, secondIndustryId } = req.body;
+
+    // Find both industries
+    const firstIndustry = await Industry.findByPk(firstIndustryId);
+    const secondIndustry = await Industry.findByPk(secondIndustryId);
+
+    if (!firstIndustry || !secondIndustry) {
+      return responseGenerator(
+        res,
+        'One or both industries not found',
+        statusCodeVars.NOT_FOUND
+      );
+    }
+
+    // Store the original indices
+    const firstIndex = firstIndustry.index;
+    const secondIndex = secondIndustry.index;
+
+    // Use Industry.sequelize instead of direct sequelize reference
+    await Industry.sequelize.transaction(async (t) => {
+      await firstIndustry.update({ index: secondIndex }, { transaction: t });
+      await secondIndustry.update({ index: firstIndex }, { transaction: t });
+    });
+
+    const updatedIndustries = await Industry.findAll({
+      order: [['index', 'ASC']]
+    });
+
+    return responseGenerator(
+      res,
+      'Industries reordered successfully',
+      statusCodeVars.OK,
+      updatedIndustries
+    );
+  } catch (err) {
+    next(err);
   }
 };

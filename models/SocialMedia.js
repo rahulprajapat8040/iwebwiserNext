@@ -12,14 +12,19 @@ const SocialMedia = sequelize.define(
     link: {
       type: DataTypes.STRING,
     },
-    type: {
-      type: DataTypes.ENUM({
-        values: ["facebook", "twitter", "instagram", "linkedin", "youtube"],
-      }),
+    title: {
+      type: DataTypes.STRING
+    },
+    icon:{
+      type: DataTypes.STRING
     },
     active: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
+    },
+    index: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0
     },
   },
   {

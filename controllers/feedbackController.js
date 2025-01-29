@@ -8,18 +8,22 @@ const {
 } = require("../helper/redis.helper.js");
 const { dataNotExist } = require("../helper/check_existence.helper.js");
 const { Feedback, Industry } = require("../models/index.js");
-const { Op } = require('sequelize');
+const { Op, sequelize } = require('sequelize');
 
 exports.createFeedback = async (req, res, next) => {
   try {
-    const { title, description, sub_title, image, alt, } = req.body;
+    const { title, description, sub_title, image, alt } = req.body;
+    
+    // Get the highest index
+    const maxIndex = await Feedback.max('index') || 0;
+    
     const newFeedback = await Feedback.create({
       title,
       description,
       sub_title,
       image,
       alt,
-
+      index: maxIndex + 1  // Set the new index as highest + 1
     });
     return responseGenerator(
       res,
@@ -35,7 +39,7 @@ exports.createFeedback = async (req, res, next) => {
 exports.updateFeedback = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, sub_title, description, button_link, image, alt, } = req.body;
+    const { title, sub_title, description, button_link, image, alt } = req.body;
 
     const feedback = await Feedback.findByPk(id);
     dataNotExist(feedback, vars.FEEDBACK_NOT_FOUND, statusCodeVars.NOT_FOUND);
@@ -46,8 +50,7 @@ exports.updateFeedback = async (req, res, next) => {
       sub_title,
       button_link,
       image,
-      alt,
-
+      alt
     });
     return responseGenerator(
       res,
@@ -67,10 +70,9 @@ exports.getAllFeedback = async (req, res, next) => {
     let feedbacks;
     let pageInfo = null;
 
-
     if (showAll === "true") {
       feedbacks = await Feedback.findAll({
-        order: [["createdAt", "ASC"]]
+        order: [["index", "ASC"]]  // Order by index ascending
       });
     } else {
       const pageNumber = parseInt(page) || 1;
@@ -79,6 +81,7 @@ exports.getAllFeedback = async (req, res, next) => {
       const { rows, count: totalItems } = await Feedback.findAndCountAll({
         limit: pageSize,
         offset: (pageNumber - 1) * pageSize,
+        order: [["index", "ASC"]]  // Order by index ascending
       });
 
       feedbacks = rows;
@@ -153,7 +156,8 @@ exports.searchFeedbackByTitle = async (req, res) => {
         title: {
           [Op.like]: `%${query}%`
         }
-      }
+      },
+      order: [["index", "ASC"]]  // Order by index ascending
     });
 
     return res.status(200).json({
@@ -170,5 +174,47 @@ exports.searchFeedbackByTitle = async (req, res) => {
       message: "Internal server error",
       error: error.message
     });
+  }
+};
+
+// New function to reorder feedbacks
+exports.reorderFeedbacks = async (req, res, next) => {
+  try {
+    const { firstFeedbackId, secondFeedbackId } = req.body;
+
+    // Find both feedbacks
+    const firstFeedback = await Feedback.findByPk(firstFeedbackId);
+    const secondFeedback = await Feedback.findByPk(secondFeedbackId);
+
+    if (!firstFeedback || !secondFeedback) {
+      return responseGenerator(
+        res,
+        'One or both feedbacks not found',
+        statusCodeVars.NOT_FOUND
+      );
+    }
+
+    // Store the original indices
+    const firstIndex = firstFeedback.index;
+    const secondIndex = secondFeedback.index;
+
+    // Use Feedback.sequelize instead of direct sequelize reference
+    await Feedback.sequelize.transaction(async (t) => {
+      await firstFeedback.update({ index: secondIndex }, { transaction: t });
+      await secondFeedback.update({ index: firstIndex }, { transaction: t });
+    });
+
+    const updatedFeedbacks = await Feedback.findAll({
+      order: [['index', 'ASC']]
+    });
+
+    return responseGenerator(
+      res,
+      'Feedbacks reordered successfully',
+      statusCodeVars.OK,
+      updatedFeedbacks
+    );
+  } catch (err) {
+    next(err);
   }
 };

@@ -38,6 +38,11 @@ const CaseStudy = sequelize.define(
       validate: {
         len: [0, 1000000000]
       }
+    },
+    index: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0
     }
   },
   {
