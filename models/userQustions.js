@@ -13,9 +13,12 @@ const UserQuestions = sequelize.define('userQuestions', {
     answer: {
         type: DataTypes.TEXT("long")
     },
+    keywords: {
+        type: DataTypes.JSON
+    },
     userId: {
         type: DataTypes.UUID,
-        allowNull: false
+        allowNull: true  // Change to allow null for guest users
     },
 })
 

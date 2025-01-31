@@ -1,7 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const { UserQuestions } = require("../models/index");
+const { UserQuestions, User } = require("../models/index");
 const { Op } = require("sequelize");
 
 // Initialize Gemini API
@@ -9,12 +9,12 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Enhanced model configuration for better comprehension
 const modelConfig = {
-    model: "gemini-1.5-pro",
+    model: "gemini-1.5-flash",
     generationConfig: {
-        temperature: 0.7,
+        temperature: 0.9,
         topK: 40,
         topP: 0.95,
-        maxOutputTokens: 2048,
+        maxOutputTokens: 4096,
     }
 };
 
@@ -202,49 +202,82 @@ ${formatChatHistory(history)}
 Is there anything specific from our previous discussions you'd like to know more about?`;
 };
 
-// Enhanced prompt engineering
-const createEnhancedPrompt = (userName, userMessage, websiteContent, userContext) => {
-    return `
-    You are an intelligent AI assistant for our website, chatting with ${userName}. You have access to our website content and the user's chat history.
+// Match keywords with user query
+const findRelevantContent = (userMessage, websiteContent) => {
+    const userWords = userMessage.toLowerCase().split(/\W+/);
+    const relevantSections = websiteContent.filter(section => {
+        const keywords = section.keywords || [];
+        return keywords.some(keyword =>
+            userWords.some(word => word.includes(keyword) || keyword.includes(word))
+        );
+    });
 
-    Core Capabilities:
-    1. Understand and respond to user queries naturally
-    2. Provide accurate information from our content
-    3. Remember and reference previous conversations
-    4. Identify user interests and patterns
-    5. Suggest relevant services and information
-    6. Handle complex queries about pricing, services, and support
-    7. Maintain conversation context and flow
+    return relevantSections;
+};
 
-    Website Content:
-    ${websiteContent}
-
-    ${userContext ? `User Context:
-    Previous Interactions: ${userContext.totalInteractions}
-    Last Interaction: ${new Date(userContext.lastInteraction).toLocaleString()}
+// Create AI prompt
+const createPrompt = (userName, userMessage, websiteContent, userContext) => {
+    // Handle null/undefined userName gracefully
+    const safeUserName = userName || 'Guest';
     
-    Recent Conversations:
-    ${userContext.formattedHistory}` : 'New User - No Previous History'}
+    // Find relevant content
+    const relevantContent = findRelevantContent(userMessage, websiteContent);
 
-    Current Query: ${userMessage}
+    return `You are an advanced AI assistant with natural conversation abilities. You're chatting with ${safeUserName}.
 
-    Instructions:
-    1. Analyze the query context and intent
-    2. Consider previous interactions if available
-    3. Provide relevant, accurate information
-    4. Be conversational and engaging
-    5. Include specific details when available
-    6. Suggest related information when appropriate
-    7. End with a relevant follow-up question
+Key Instructions:
+- Provide concise, clear responses
+- Use natural formatting like bullet points and numbering when appropriate
+- Highlight key information
+- Keep responses brief but informative
+- Use conversational tone
+- Format like a modern chat interface
+- use emojis when appropriate
+- use list view when appropriate
+- use bold when appropriate
+- use italic when appropriate
+- use underline when appropriate
+- use strikethrough when appropriate
+- use code when appropriate
+- use blockquote when appropriate
 
-    Please provide a comprehensive response:`;
+Relevant Content:
+${JSON.stringify(relevantContent || [])}
+
+${userContext ? `Previous Interactions:
+${JSON.stringify(userContext, null, 2)}` : 'New User'}
+
+Query: ${userMessage}
+
+Provide a friendly, well-formatted response that directly addresses the query:`;
+};
+
+// Enhanced keyword extraction using AI
+const extractKeywords = async (text, model) => {
+    const keywordPrompt = `Extract 3-5 meaningful keywords from this text. Return them as a comma-separated list without quotes or special formatting.
+
+Text: "${text}"
+
+Keywords:`;
+
+    try {
+        const result = await model.generateContent(keywordPrompt);
+        const keywordText = result.response.text().trim();
+        // Split by comma and clean up each keyword
+        return keywordText.split(',')
+            .map(k => k.trim())
+            .filter(k => k.length > 0);
+    } catch (error) {
+        console.error("Error extracting keywords:", error);
+        return [];
+    }
 };
 
 // Main chat handler
 exports.getWebsiteContent = async (req, res) => {
     const { usermessage, userInfo } = req.body;
-    const userName = userInfo?.name || 'there';
-    const userId = userInfo?.id;
+    const userName = userInfo?.name || 'Guest';
+    const userId = userInfo?.id || null;
 
     if (!usermessage) {
         return res.status(400).json({
@@ -254,37 +287,39 @@ exports.getWebsiteContent = async (req, res) => {
     }
 
     try {
-        // Get user's chat history and website content
-        const recentHistory = await getRecentChatHistory(userId);
-        const historyAnalysis = analyzeChatHistory(recentHistory);
-        const formattedHistory = formatChatHistory(recentHistory);
-
+        const recentHistory = userId ? await getRecentChatHistory(userId) : null;
         const websiteContent = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "content", "websiteContent.json"), "utf-8"));
-        const contentAnalysis = analyzeContent(websiteContent);
+        
+        const model = genAI.getGenerativeModel(modelConfig);
+        
+        // Extract meaningful keywords from user's question
+        const questionKeywords = await extractKeywords(usermessage, model);
 
-        // Create enhanced prompt
-        const prompt = createEnhancedPrompt(
+        const prompt = createPrompt(
             userName,
             usermessage,
-            formatContentForAI(websiteContent),
-            userId ? {
-                ...historyAnalysis,
-                formattedHistory
+            websiteContent,
+            recentHistory ? {
+                history: recentHistory,
+                totalInteractions: recentHistory.length,
+                lastInteraction: recentHistory[recentHistory.length - 1]?.createdAt
             } : null
         );
 
-        // Get AI response
-        const model = genAI.getGenerativeModel(modelConfig);
         const result = await model.generateContent(prompt);
         const aiResponse = result.response.text();
 
-        // Save interaction
+        // Save to database with improved keyword structure
         if (userId) {
             await UserQuestions.create({
                 question: usermessage,
                 answer: aiResponse,
                 userId: userId,
-                timestamp: new Date()
+                timestamp: new Date(),
+                keywords: {
+                    topics: questionKeywords,
+                    category: await categorizeQuestion(usermessage, model)
+                }
             }).catch(err => console.error('Database save error:', err));
         }
 
@@ -293,32 +328,74 @@ exports.getWebsiteContent = async (req, res) => {
             message: aiResponse,
             model: modelConfig.model,
             userInfo: userInfo || null,
-            hasHistory: !!recentHistory?.length
+            hasHistory: !!recentHistory?.length,
+            keywords: questionKeywords,
+            isGuest: !userId
         });
 
     } catch (error) {
         console.error("Error:", error);
+        
+        const model = genAI.getGenerativeModel(modelConfig);
+        const errorPrompt = `Create a brief, friendly error message for ${userName} about a technical issue.`;
+        
+        try {
+            const errorResult = await model.generateContent(errorPrompt);
+            const errorResponse = errorResult.response.text();
 
-        const errorResponse = `I apologize ${userName}, I'm experiencing a technical issue at the moment. Please try asking your question again, or you can reach out to our support team directly for immediate assistance.`;
+            if (userId) {
+                await UserQuestions.create({
+                    question: usermessage,
+                    answer: errorResponse,
+                    userId: userId,
+                    timestamp: new Date(),
+                    error: error.message,
+                    keywords: {
+                        topics: [],
+                        category: ['Error']
+                    }
+                }).catch(err => console.error('Database save error:', err));
+            }
 
-        if (userId) {
-            await UserQuestions.create({
-                question: usermessage,
-                answer: errorResponse,
-                userId: userId,
-                timestamp: new Date(),
-                error: error.message
-            }).catch(err => console.error('Database save error:', err));
+            return res.status(200).json({
+                success: true,
+                message: errorResponse,
+                isError: true,
+                shouldRetry: true
+            });
+        } catch (aiError) {
+            return res.status(500).json({
+                success: false,
+                message: "An unexpected error occurred",
+                isError: true
+            });
         }
-
-        return res.status(200).json({
-            success: true,
-            message: errorResponse,
-            isError: true,
-            shouldRetry: true
-        });
     }
 };
+
+// New function to categorize questions
+async function categorizeQuestion(question, model) {
+    const categoryPrompt = `From the following categories, which best describes this question? Choose only one:
+- Technical Support
+- Product Information
+- Pricing
+- Service Inquiry
+- General Information
+- Other
+
+Question: "${question}"
+
+Category:`;
+
+    try {
+        const result = await model.generateContent(categoryPrompt);
+        const category = result.response.text().trim();
+        return [category.replace(/^[- ]+/, '')]; // Clean up any leading dash or spaces
+    } catch (error) {
+        console.error("Error categorizing question:", error);
+        return ['Other'];
+    }
+}
 
 // Get chat history with enhanced analysis
 exports.getUserChatHistory = async (req, res) => {
@@ -340,6 +417,22 @@ exports.getUserChatHistory = async (req, res) => {
             offset: offset ? parseInt(offset) : 0
         });
 
+        // Analyze keywords across all conversations
+        const allKeywords = new Map();
+        chatHistory.forEach(chat => {
+            if (chat.keywords?.combined) {
+                chat.keywords.combined.forEach(keyword => {
+                    allKeywords.set(keyword, (allKeywords.get(keyword) || 0) + 1);
+                });
+            }
+        });
+
+        // Get top keywords
+        const topKeywords = Array.from(allKeywords.entries())
+            .sort(([,a], [,b]) => b - a)
+            .slice(0, 10)
+            .map(([keyword, count]) => ({ keyword, count }));
+
         const analysis = analyzeChatHistory(chatHistory);
 
         return res.status(200).json({
@@ -347,8 +440,8 @@ exports.getUserChatHistory = async (req, res) => {
             data: chatHistory,
             analysis: {
                 totalInteractions: analysis.totalInteractions,
-                servicesInterested: analysis.servicesInterested,
-                lastInteraction: analysis.lastInteraction
+                lastInteraction: analysis.lastInteraction,
+                topKeywords
             }
         });
     } catch (error) {
@@ -356,6 +449,161 @@ exports.getUserChatHistory = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Failed to fetch chat history"
+        });
+    }
+};
+
+exports.getAllChat = async (req, res) => {
+    try {
+        // First, fetch all users to have their details readily available
+        const users = await User.findAll({
+            attributes: ['id', 'name', 'email']
+        });
+        const userMap = new Map(users.map(user => [user.id, user]));
+
+        const usermessages = await UserQuestions.findAll({
+            order: [['createdAt', 'DESC']],
+            include: [
+                {
+                    model: User,
+                    attributes: ['id', 'name', 'email'],
+                    required: false
+                }
+            ]
+        });
+
+        // Analyze keywords across all conversations
+        const allKeywords = new Map();
+        const userInteractions = new Map();
+        const timeAnalysis = {
+            totalChats: usermessages.length,
+            firstInteraction: null,
+            lastInteraction: null,
+            averageResponseLength: 0,
+            totalResponseLength: 0
+        };
+
+        const keywordAnalysis = {
+            byCategory: new Map(),
+            topicFrequency: new Map()
+        };
+
+        usermessages.forEach(chat => {
+            // Keyword analysis
+            if (chat.keywords?.topics) {
+                chat.keywords.topics.forEach(topic => {
+                    keywordAnalysis.topicFrequency.set(
+                        topic, 
+                        (keywordAnalysis.topicFrequency.get(topic) || 0) + 1
+                    );
+                });
+            }
+            if (chat.keywords?.category) {
+                chat.keywords.category.forEach(category => {
+                    keywordAnalysis.byCategory.set(
+                        category,
+                        (keywordAnalysis.byCategory.get(category) || 0) + 1
+                    );
+                });
+            }
+
+            // User interaction analysis
+            const userId = chat.userId;
+            userInteractions.set(userId, (userInteractions.get(userId) || 0) + 1);
+
+            // Time and response analysis
+            const timestamp = new Date(chat.timestamp || chat.createdAt);
+            if (!timeAnalysis.firstInteraction || timestamp < new Date(timeAnalysis.firstInteraction)) {
+                timeAnalysis.firstInteraction = timestamp;
+            }
+            if (!timeAnalysis.lastInteraction || timestamp > new Date(timeAnalysis.lastInteraction)) {
+                timeAnalysis.lastInteraction = timestamp;
+            }
+
+            // Response length analysis
+            if (chat.answer) {
+                timeAnalysis.totalResponseLength += chat.answer.length;
+            }
+        });
+
+        timeAnalysis.averageResponseLength = Math.round(timeAnalysis.totalResponseLength / usermessages.length);
+
+        // Get top keywords
+        const topKeywords = Array.from(allKeywords.entries())
+            .sort(([,a], [,b]) => b - a)
+            .slice(0, 10)
+            .map(([keyword, count]) => ({ keyword, count }));
+
+        // Get user interaction stats
+        const userStats = Array.from(userInteractions.entries())
+            .map(([userId, count]) => ({
+                userId,
+                totalChats: count,
+                percentage: Math.round((count / timeAnalysis.totalChats) * 100)
+            }))
+            .sort((a, b) => b.totalChats - a.totalChats);
+
+        // Group chats by date
+        const chatsByDate = usermessages.reduce((acc, chat) => {
+            const date = new Date(chat.timestamp || chat.createdAt).toLocaleDateString();
+            if (!acc[date]) {
+                acc[date] = [];
+            }
+
+            const user = chat.userId ? userMap.get(chat.userId) : null;
+            
+            acc[date].push({
+                id: chat.id,
+                question: chat.question,
+                answer: chat.answer,
+                keywords: chat.keywords,
+                timestamp: chat.timestamp || chat.createdAt,
+                user: user ? {
+                    id: user.id,
+                    name: user.name || 'Unknown',
+                    email: user.email || 'No email provided'
+                } : {
+                    id: null,
+                    name: 'Guest',
+                    email: null
+                }
+            });
+            return acc;
+        }, {});
+
+        return res.status(200).json({ 
+            success: true,
+            message: "Successfully retrieved all messages",
+            data: {
+                conversations: chatsByDate,
+                analysis: {
+                    timeStats: {
+                        totalChats: timeAnalysis.totalChats,
+                        firstInteraction: timeAnalysis.firstInteraction,
+                        lastInteraction: timeAnalysis.lastInteraction,
+                        averageResponseLength: timeAnalysis.averageResponseLength
+                    },
+                    keywordAnalysis: {
+                        topTopics: Array.from(keywordAnalysis.topicFrequency.entries())
+                            .sort(([,a], [,b]) => b - a)
+                            .slice(0, 10)
+                            .map(([topic, count]) => ({ topic, count })),
+                        categoryDistribution: Object.fromEntries(keywordAnalysis.byCategory)
+                    },
+                    userStats: {
+                        totalUsers: userInteractions.size,
+                        totalGuests: usermessages.filter(m => !m.userId).length,
+                        userInteractions: userStats
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error("Error:", error);
+        return res.status(500).json({ 
+            success: false, 
+            message: "Internal server error", 
+            error: error.message 
         });
     }
 };

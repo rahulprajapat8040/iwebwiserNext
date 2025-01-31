@@ -154,3 +154,31 @@ exports.getFieldBySlug = async (req, res, next) => {
     next(err);
   }
 };
+
+exports.reorderFields = async (req, res, next) => {
+  try {
+    const { firstId, secondId } = req.body;
+
+    // Get both fields
+    const firstField = await Field.findByPk(firstId);
+    const secondField = await Field.findByPk(secondId);
+
+    // Check if both fields exist
+    dataNotExist(firstField, vars.FIELD_NOT_FOUND, statusCodeVars.NOT_FOUND);
+    dataNotExist(secondField, vars.FIELD_NOT_FOUND, statusCodeVars.NOT_FOUND);
+
+    // Swap their indexes
+    const tempIndex = firstField.index;
+    await firstField.update({ index: secondField.index });
+    await secondField.update({ index: tempIndex });
+
+    return responseGenerator(
+      res,
+      "Fields reordered successfully",
+      statusCodeVars.OK,
+      { firstField, secondField }
+    );
+  } catch (err) {
+    next(err);
+  }
+};
