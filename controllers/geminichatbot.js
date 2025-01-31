@@ -1,13 +1,12 @@
+// 1. Dependencies and initial setup
 const fs = require("fs");
 const path = require("path");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { UserQuestions, User } = require("../models/index");
 const { Op } = require("sequelize");
 
-// Initialize Gemini API
+// Initialize Gemini API with configuration
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-// Enhanced model configuration for better comprehension
 const modelConfig = {
     model: "gemini-1.5-flash",
     generationConfig: {
@@ -21,60 +20,7 @@ const modelConfig = {
 // Load website content
 const websiteContent = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "content", "websiteContent.json"), "utf-8"));
 
-// Format chat history for context
-const formatChatHistory = (history) => {
-    if (!history || history.length === 0) return "You haven't had any previous conversations yet.";
-
-    const formattedChats = history.map(chat => {
-        const timestamp = new Date(chat.timestamp || chat.createdAt).toLocaleString();
-        return `Time: ${timestamp}
-Your Question: ${chat.question}
-My Response: ${chat.answer}`;
-    });
-
-    return formattedChats.join('\n\n---\n\n');
-};
-
-// Analyze chat history for patterns and preferences
-const analyzeChatHistory = (history) => {
-    if (!history || history.length === 0) return {};
-
-    const analysis = {
-        topicsDiscussed: new Set(),
-        servicesInterested: new Set(),
-        previousQueries: new Set(),
-        lastInteraction: null,
-        queryPatterns: []
-    };
-
-    history.forEach(chat => {
-        // Store the complete interaction for context
-        analysis.queryPatterns.push({
-            query: chat.question,
-            response: chat.answer,
-            timestamp: chat.timestamp || chat.createdAt
-        });
-
-        analysis.previousQueries.add(chat.question);
-        analysis.lastInteraction = chat.timestamp || chat.createdAt;
-    });
-
-    return {
-        previousQueries: Array.from(analysis.previousQueries),
-        lastInteraction: analysis.lastInteraction,
-        totalInteractions: history.length,
-        queryPatterns: analysis.queryPatterns
-    };
-};
-
-// Smarter history query detection
-const isHistoryRelatedQuery = (query) => {
-    // Let the AI model determine if this is a history-related query through the prompt
-    // Rather than using keyword matching
-    return false;
-};
-
-// Smarter content processing
+// 2. Content Processing Helper Functions
 const processWebsiteContent = (content) => {
     // If content is an array of objects (structured)
     if (Array.isArray(content)) {
@@ -163,6 +109,66 @@ const formatContentForAI = (content) => {
     return formattedContent;
 };
 
+// Match keywords with user query
+const findRelevantContent = (userMessage, websiteContent) => {
+    const userWords = userMessage.toLowerCase().split(/\W+/);
+    const relevantSections = websiteContent.filter(section => {
+        const keywords = section.keywords || [];
+        return keywords.some(keyword =>
+            userWords.some(word => word.includes(keyword) || keyword.includes(word))
+        );
+    });
+
+    return relevantSections;
+};
+
+// 3. Chat History Helper Functions
+// Format chat history for context
+const formatChatHistory = (history) => {
+    if (!history || history.length === 0) return "You haven't had any previous conversations yet.";
+
+    const formattedChats = history.map(chat => {
+        const timestamp = new Date(chat.timestamp || chat.createdAt).toLocaleString();
+        return `Time: ${timestamp}
+Your Question: ${chat.question}
+My Response: ${chat.answer}`;
+    });
+
+    return formattedChats.join('\n\n---\n\n');
+};
+
+// Analyze chat history for patterns and preferences
+const analyzeChatHistory = (history) => {
+    if (!history || history.length === 0) return {};
+
+    const analysis = {
+        topicsDiscussed: new Set(),
+        servicesInterested: new Set(),
+        previousQueries: new Set(),
+        lastInteraction: null,
+        queryPatterns: []
+    };
+
+    history.forEach(chat => {
+        // Store the complete interaction for context
+        analysis.queryPatterns.push({
+            query: chat.question,
+            response: chat.answer,
+            timestamp: chat.timestamp || chat.createdAt
+        });
+
+        analysis.previousQueries.add(chat.question);
+        analysis.lastInteraction = chat.timestamp || chat.createdAt;
+    });
+
+    return {
+        previousQueries: Array.from(analysis.previousQueries),
+        lastInteraction: analysis.lastInteraction,
+        totalInteractions: history.length,
+        queryPatterns: analysis.queryPatterns
+    };
+};
+
 // Get recent chat history
 const getRecentChatHistory = async (userId, limit = 5) => {
     if (!userId) return null;
@@ -180,100 +186,25 @@ const getRecentChatHistory = async (userId, limit = 5) => {
     }
 };
 
-// Add this new function
-const createHistoryResponse = (userName, history, analysis) => {
-    if (!history || history.length === 0) {
-        return `Hi ${userName}! This appears to be our first conversation. How can I help you today?`;
-    }
-
-    const lastInteraction = new Date(analysis.lastInteraction).toLocaleString();
-    const topics = analysis.servicesInterested.join(', ');
-
-    return `Hi ${userName}! Let me summarize your previous interactions:
-
-- We've had ${analysis.totalInteractions} conversations in total
-- Your last interaction was on ${lastInteraction}
-${topics ? `- You've shown interest in: ${topics}` : ''}
-
-Here are your recent conversations:
-
-${formatChatHistory(history)}
-
-Is there anything specific from our previous discussions you'd like to know more about?`;
-};
-
-// Match keywords with user query
-const findRelevantContent = (userMessage, websiteContent) => {
-    const userWords = userMessage.toLowerCase().split(/\W+/);
-    const relevantSections = websiteContent.filter(section => {
-        const keywords = section.keywords || [];
-        return keywords.some(keyword =>
-            userWords.some(word => word.includes(keyword) || keyword.includes(word))
-        );
-    });
-
-    return relevantSections;
-};
-
-// Create AI prompt
+// Add this function before exports.getWebsiteContent
 const createPrompt = (userName, userMessage, websiteContent, userContext) => {
-    // Handle null/undefined userName gracefully
-    const safeUserName = userName || 'Guest';
-    
-    // Find relevant content
-    const relevantContent = findRelevantContent(userMessage, websiteContent);
+    return `You are an AI assistant named Gemini. Please provide a response following these guidelines:
+    - Use a friendly, professional tone
+    - Start with a greeting addressing ${userName}
+    - Keep responses clear and concise
+    - Format important information with bullet points
+    - Include relevant details from the context when appropriate
 
-    return `You are an advanced AI assistant with natural conversation abilities. You're chatting with ${safeUserName}.
+User Question: ${userMessage}
 
-Key Instructions:
-- Provide concise, clear responses
-- Use natural formatting like bullet points and numbering when appropriate
-- Highlight key information
-- Keep responses brief but informative
-- Use conversational tone
-- Format like a modern chat interface
-- use emojis when appropriate
-- use list view when appropriate
-- use bold when appropriate
-- use italic when appropriate
-- use underline when appropriate
-- use strikethrough when appropriate
-- use code when appropriate
-- use blockquote when appropriate
+Context:
+${formatContentForAI(websiteContent)}
 
-Relevant Content:
-${JSON.stringify(relevantContent || [])}
-
-${userContext ? `Previous Interactions:
-${JSON.stringify(userContext, null, 2)}` : 'New User'}
-
-Query: ${userMessage}
-
-Provide a friendly, well-formatted response that directly addresses the query:`;
+${userContext ? `Previous Interaction History:
+${formatChatHistory(userContext.history)}` : 'No previous interaction history.'}`;
 };
 
-// Enhanced keyword extraction using AI
-const extractKeywords = async (text, model) => {
-    const keywordPrompt = `Extract 3-5 meaningful keywords from this text. Return them as a comma-separated list without quotes or special formatting.
-
-Text: "${text}"
-
-Keywords:`;
-
-    try {
-        const result = await model.generateContent(keywordPrompt);
-        const keywordText = result.response.text().trim();
-        // Split by comma and clean up each keyword
-        return keywordText.split(',')
-            .map(k => k.trim())
-            .filter(k => k.length > 0);
-    } catch (error) {
-        console.error("Error extracting keywords:", error);
-        return [];
-    }
-};
-
-// Main chat handler
+// 4. Main Chat Handler
 exports.getWebsiteContent = async (req, res) => {
     const { usermessage, userInfo } = req.body;
     const userName = userInfo?.name || 'Guest';
@@ -288,14 +219,48 @@ exports.getWebsiteContent = async (req, res) => {
 
     try {
         const recentHistory = userId ? await getRecentChatHistory(userId) : null;
-        const websiteContent = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "content", "websiteContent.json"), "utf-8"));
-        
         const model = genAI.getGenerativeModel(modelConfig);
-        
-        // Extract meaningful keywords from user's question
-        const questionKeywords = await extractKeywords(usermessage, model);
 
-        const prompt = createPrompt(
+        // Modified category analysis with better error handling
+        const categoryPrompt = `Analyze this question and respond with a JSON object containing:
+{
+    "keywords": ["keyword1", "keyword2"],
+    "category": "main category",
+    "subCategories": ["sub1", "sub2"],
+    "sentiment": "positive/neutral/negative"
+}
+
+Question: "${usermessage}"`;
+
+        const categoryAnalysis = await model.generateContent(categoryPrompt);
+        let analysis;
+        
+        try {
+            // Clean and parse the response
+            const responseText = categoryAnalysis.response.text()
+                .replace(/```json/g, '')  // Remove any markdown formatting
+                .replace(/```/g, '')      // Remove closing markdown
+                .trim();                  // Remove whitespace
+            
+            // Find the first { and last } to extract valid JSON
+            const start = responseText.indexOf('{');
+            const end = responseText.lastIndexOf('}') + 1;
+            const jsonStr = responseText.slice(start, end);
+            
+            analysis = JSON.parse(jsonStr);
+        } catch (parseError) {
+            console.error("JSON Parse Error:", parseError);
+            // Fallback analysis
+            analysis = {
+                keywords: [userMessage.split(' ')[0]],
+                category: "general",
+                subCategories: [],
+                sentiment: "neutral"
+            };
+        }
+
+        // Get main response
+        const result = await model.generateContent(createPrompt(
             userName,
             usermessage,
             websiteContent,
@@ -304,23 +269,19 @@ exports.getWebsiteContent = async (req, res) => {
                 totalInteractions: recentHistory.length,
                 lastInteraction: recentHistory[recentHistory.length - 1]?.createdAt
             } : null
-        );
+        ));
 
-        const result = await model.generateContent(prompt);
         const aiResponse = result.response.text();
 
-        // Save to database with improved keyword structure
+        // Save to database with analysis
         if (userId) {
             await UserQuestions.create({
                 question: usermessage,
                 answer: aiResponse,
                 userId: userId,
                 timestamp: new Date(),
-                keywords: {
-                    topics: questionKeywords,
-                    category: await categorizeQuestion(usermessage, model)
-                }
-            }).catch(err => console.error('Database save error:', err));
+                keywords: analysis
+            });
         }
 
         return res.status(200).json({
@@ -329,16 +290,17 @@ exports.getWebsiteContent = async (req, res) => {
             model: modelConfig.model,
             userInfo: userInfo || null,
             hasHistory: !!recentHistory?.length,
-            keywords: questionKeywords,
+            analysis: analysis,
             isGuest: !userId
         });
 
     } catch (error) {
         console.error("Error:", error);
-        
+
         const model = genAI.getGenerativeModel(modelConfig);
+
         const errorPrompt = `Create a brief, friendly error message for ${userName} about a technical issue.`;
-        
+
         try {
             const errorResult = await model.generateContent(errorPrompt);
             const errorResponse = errorResult.response.text();
@@ -373,31 +335,7 @@ exports.getWebsiteContent = async (req, res) => {
     }
 };
 
-// New function to categorize questions
-async function categorizeQuestion(question, model) {
-    const categoryPrompt = `From the following categories, which best describes this question? Choose only one:
-- Technical Support
-- Product Information
-- Pricing
-- Service Inquiry
-- General Information
-- Other
-
-Question: "${question}"
-
-Category:`;
-
-    try {
-        const result = await model.generateContent(categoryPrompt);
-        const category = result.response.text().trim();
-        return [category.replace(/^[- ]+/, '')]; // Clean up any leading dash or spaces
-    } catch (error) {
-        console.error("Error categorizing question:", error);
-        return ['Other'];
-    }
-}
-
-// Get chat history with enhanced analysis
+// 5. History and Analysis Endpoints
 exports.getUserChatHistory = async (req, res) => {
     const { userId } = req.params;
     const { limit, offset } = req.query;
@@ -429,7 +367,7 @@ exports.getUserChatHistory = async (req, res) => {
 
         // Get top keywords
         const topKeywords = Array.from(allKeywords.entries())
-            .sort(([,a], [,b]) => b - a)
+            .sort(([, a], [, b]) => b - a)
             .slice(0, 10)
             .map(([keyword, count]) => ({ keyword, count }));
 
@@ -455,6 +393,16 @@ exports.getUserChatHistory = async (req, res) => {
 
 exports.getAllChat = async (req, res) => {
     try {
+        // Add website content analysis
+        const websiteKeywords = new Map();
+        websiteContent.forEach(section => {
+            if (section.keywords) {
+                section.keywords.forEach(keyword => {
+                    websiteKeywords.set(keyword, (websiteKeywords.get(keyword) || 0));
+                });
+            }
+        });
+
         // First, fetch all users to have their details readily available
         const users = await User.findAll({
             attributes: ['id', 'name', 'email']
@@ -485,19 +433,60 @@ exports.getAllChat = async (req, res) => {
 
         const keywordAnalysis = {
             byCategory: new Map(),
-            topicFrequency: new Map()
+            topicFrequency: new Map(websiteKeywords), // Initialize with website keywords
+            websiteContentMatches: new Map(),
+            commonPhrases: new Map(),
+            questionTypes: new Map(),
+            sentimentAnalysis: {
+                positive: 0,
+                neutral: 0,
+                negative: 0
+            }
         };
 
         usermessages.forEach(chat => {
-            // Keyword analysis
+            // Enhanced keyword analysis
             if (chat.keywords?.topics) {
                 chat.keywords.topics.forEach(topic => {
                     keywordAnalysis.topicFrequency.set(
-                        topic, 
+                        topic,
                         (keywordAnalysis.topicFrequency.get(topic) || 0) + 1
                     );
                 });
             }
+
+            // Categorize question types
+            const questionStart = chat.question.toLowerCase().split(' ')[0];
+            if (['what', 'how', 'why', 'when', 'where', 'who'].includes(questionStart)) {
+                keywordAnalysis.questionTypes.set(
+                    questionStart,
+                    (keywordAnalysis.questionTypes.get(questionStart) || 0) + 1
+                );
+            }
+
+            // Extract common phrases (3-4 word combinations)
+            const questionWords = chat.question.toLowerCase().split(/\s+/);
+            for (let i = 0; i < questionWords.length - 2; i++) {
+                const phrase = questionWords.slice(i, i + 3).join(' ');
+                keywordAnalysis.commonPhrases.set(
+                    phrase,
+                    (keywordAnalysis.commonPhrases.get(phrase) || 0) + 1
+                );
+            }
+
+            // Basic sentiment analysis based on keywords
+            const positiveWords = ['great', 'good', 'excellent', 'help', 'thanks'];
+            const negativeWords = ['bad', 'issue', 'problem', 'error', 'wrong'];
+
+            const sentimentWords = chat.question.toLowerCase().split(/\s+/);
+            if (sentimentWords.some(word => positiveWords.includes(word))) {
+                keywordAnalysis.sentimentAnalysis.positive++;
+            } else if (sentimentWords.some(word => negativeWords.includes(word))) {
+                keywordAnalysis.sentimentAnalysis.negative++;
+            } else {
+                keywordAnalysis.sentimentAnalysis.neutral++;
+            }
+
             if (chat.keywords?.category) {
                 chat.keywords.category.forEach(category => {
                     keywordAnalysis.byCategory.set(
@@ -507,30 +496,30 @@ exports.getAllChat = async (req, res) => {
                 });
             }
 
-            // User interaction analysis
-            const userId = chat.userId;
-            userInteractions.set(userId, (userInteractions.get(userId) || 0) + 1);
+            // Match with website content keywords
+            websiteContent.forEach(section => {
+                if (section.keywords) {
+                    section.keywords.forEach(keyword => {
+                        if (chat.question.toLowerCase().includes(keyword.toLowerCase())) {
+                            keywordAnalysis.topicFrequency.set(
+                                keyword,
+                                (keywordAnalysis.topicFrequency.get(keyword) || 0) + 1
+                            );
 
-            // Time and response analysis
-            const timestamp = new Date(chat.timestamp || chat.createdAt);
-            if (!timeAnalysis.firstInteraction || timestamp < new Date(timeAnalysis.firstInteraction)) {
-                timeAnalysis.firstInteraction = timestamp;
-            }
-            if (!timeAnalysis.lastInteraction || timestamp > new Date(timeAnalysis.lastInteraction)) {
-                timeAnalysis.lastInteraction = timestamp;
-            }
-
-            // Response length analysis
-            if (chat.answer) {
-                timeAnalysis.totalResponseLength += chat.answer.length;
-            }
+                            // Track which content sections are most referenced
+                            keywordAnalysis.websiteContentMatches.set(
+                                section.content.substring(0, 50) + "...",
+                                (keywordAnalysis.websiteContentMatches.get(section.content.substring(0, 50) + "...") || 0) + 1
+                            );
+                        }
+                    });
+                }
+            });
         });
-
-        timeAnalysis.averageResponseLength = Math.round(timeAnalysis.totalResponseLength / usermessages.length);
 
         // Get top keywords
         const topKeywords = Array.from(allKeywords.entries())
-            .sort(([,a], [,b]) => b - a)
+            .sort(([, a], [, b]) => b - a)
             .slice(0, 10)
             .map(([keyword, count]) => ({ keyword, count }));
 
@@ -551,7 +540,7 @@ exports.getAllChat = async (req, res) => {
             }
 
             const user = chat.userId ? userMap.get(chat.userId) : null;
-            
+
             acc[date].push({
                 id: chat.id,
                 question: chat.question,
@@ -571,7 +560,65 @@ exports.getAllChat = async (req, res) => {
             return acc;
         }, {});
 
-        return res.status(200).json({ 
+        // Enhanced user interaction tracking
+        usermessages.forEach(chat => {
+            if (chat.userId) {
+                // Count interactions per user
+                userInteractions.set(
+                    chat.userId, 
+                    (userInteractions.get(chat.userId) || {
+                        count: 0,
+                        lastActive: null,
+                        topics: new Set(),
+                        responses: []
+                    })
+                );
+
+                const userStats = userInteractions.get(chat.userId);
+                userStats.count++;
+                userStats.lastActive = chat.timestamp || chat.createdAt;
+                
+                // Track topics per user
+                if (chat.keywords?.topics) {
+                    chat.keywords.topics.forEach(topic => {
+                        userStats.topics.add(topic);
+                    });
+                }
+
+                // Track response patterns
+                userStats.responses.push({
+                    timestamp: chat.timestamp || chat.createdAt,
+                    length: chat.answer?.length || 0
+                });
+            }
+        });
+
+        // Enhanced user stats processing
+        const enhancedUserStats = Array.from(userInteractions.entries())
+            .map(([userId, stats]) => {
+                const user = userMap.get(userId);
+                return {
+                    userId,
+                    name: user?.name || 'Unknown',
+                    email: user?.email || 'No email provided',
+                    totalChats: stats.count,
+                    percentage: Math.round((stats.count / timeAnalysis.totalChats) * 100),
+                    lastActive: stats.lastActive,
+                    topTopics: Array.from(stats.topics).slice(0, 5),
+                    averageResponseLength: stats.responses.reduce((acc, r) => acc + r.length, 0) / stats.responses.length
+                };
+            })
+            .sort((a, b) => b.totalChats - a.totalChats);
+
+        // Calculate guest interactions
+        const guestMessages = usermessages.filter(m => !m.userId);
+        const guestStats = {
+            totalGuests: new Set(guestMessages.map(m => m.ip || 'unknown')).size,
+            totalGuestMessages: guestMessages.length,
+            percentage: Math.round((guestMessages.length / timeAnalysis.totalChats) * 100)
+        };
+
+        return res.status(200).json({
             success: true,
             message: "Successfully retrieved all messages",
             data: {
@@ -585,25 +632,63 @@ exports.getAllChat = async (req, res) => {
                     },
                     keywordAnalysis: {
                         topTopics: Array.from(keywordAnalysis.topicFrequency.entries())
-                            .sort(([,a], [,b]) => b - a)
+                            .sort(([, a], [, b]) => b - a)
                             .slice(0, 10)
-                            .map(([topic, count]) => ({ topic, count })),
-                        categoryDistribution: Object.fromEntries(keywordAnalysis.byCategory)
+                            .map(([topic, count]) => ({
+                                topic,
+                                count,
+                                percentage: ((count / timeAnalysis.totalChats) * 100).toFixed(2),
+                                isWebsiteContent: websiteKeywords.has(topic)
+                            })),
+                        websiteContentMatches: Array.from(keywordAnalysis.websiteContentMatches.entries())
+                            .sort(([, a], [, b]) => b - a)
+                            .slice(0, 5)
+                            .map(([content, count]) => ({
+                                content,
+                                count,
+                                percentage: ((count / timeAnalysis.totalChats) * 100).toFixed(2)
+                            })),
+                        categoryDistribution: Object.fromEntries(
+                            Array.from(keywordAnalysis.byCategory.entries())
+                                .sort(([, a], [, b]) => b - a)
+                        ),
+                        commonPhrases: Array.from(keywordAnalysis.commonPhrases.entries())
+                            .sort(([, a], [, b]) => b - a)
+                            .slice(0, 10)
+                            .map(([phrase, count]) => ({
+                                phrase,
+                                count,
+                                percentage: ((count / timeAnalysis.totalChats) * 100).toFixed(2)
+                            })),
+                        questionTypes: Object.fromEntries(keywordAnalysis.questionTypes),
+                        sentiment: {
+                            ...keywordAnalysis.sentimentAnalysis,
+                            distribution: {
+                                positive: ((keywordAnalysis.sentimentAnalysis.positive / timeAnalysis.totalChats) * 100).toFixed(2),
+                                neutral: ((keywordAnalysis.sentimentAnalysis.neutral / timeAnalysis.totalChats) * 100).toFixed(2),
+                                negative: ((keywordAnalysis.sentimentAnalysis.negative / timeAnalysis.totalChats) * 100).toFixed(2)
+                            }
+                        }
                     },
                     userStats: {
                         totalUsers: userInteractions.size,
-                        totalGuests: usermessages.filter(m => !m.userId).length,
-                        userInteractions: userStats
+                        activeUsers: enhancedUserStats.filter(u => 
+                            new Date(u.lastActive) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+                        ).length,
+                        totalGuests: guestStats.totalGuests,
+                        guestPercentage: guestStats.percentage,
+                        userInteractions: enhancedUserStats,
+                        guestStats: guestStats
                     }
                 }
             }
         });
     } catch (error) {
         console.error("Error:", error);
-        return res.status(500).json({ 
-            success: false, 
-            message: "Internal server error", 
-            error: error.message 
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error",
+            error: error.message
         });
     }
 };
