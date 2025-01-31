@@ -30,18 +30,24 @@ exports.getUserById = async (req, res, next) => {
 };
 
 (exports.register = async (req, res, next) => {
-  const { username, email, password, role } = req.body;
+  const { username, email, password, role, name } = req.body;
   try {
-    const existingUser = await User.findOne({ where: { username } });
+    const existingUser = await User.findOne({ where: { username: username || email } });
     if (existingUser)
       return res.status(400).json({ message: vars.EXISTS_USER });
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({
+
+    const userData = {
       username,
       email,
-      password: hashedPassword,
       role: role || "admin",
-    });
+      name
+    };
+
+    if (password) {
+      userData.password = await bcrypt.hash(password, 10);
+    }
+
+    const user = await User.create(userData);
     return responseGenerator(
       res,
       vars.CREATE_USER,

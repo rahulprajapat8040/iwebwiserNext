@@ -1,4 +1,5 @@
 const adminRoutes = require('./adminRoutes');
+const geminiChatbotRouter = require('./geminichatbotRoute');
 const branchRouter = require('./branchRoutes');
 const industryRouter = require('./industryRoutes')
 const serviceRouter = require('./serviceRoutes')
@@ -40,4 +41,5 @@ module.exports = (app) => {
     app.use('/api/v1/admin', adminRoutes);
     app.use('/api/v1/image', imageRouter);
     app.use('/api/v1/steps', steps);
+    app.use('/api/v1/geminichatbot', geminiChatbotRouter);
 };  

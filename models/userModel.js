@@ -9,9 +9,12 @@ const User = sequelize.define(
       defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
+    name: {
+      type: DataTypes.STRING,
+    },
     username: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true
     },
     email: {
       type: DataTypes.STRING,
@@ -19,7 +22,6 @@ const User = sequelize.define(
     },
     password: {
       type: DataTypes.STRING,
-      allowNull: false,
     },
     image: {
       type: DataTypes.STRING,
@@ -28,7 +30,7 @@ const User = sequelize.define(
       type: DataTypes.ENUM("admin", "user"),
       defaultValue: "user",
     },
-    
+
     accessToken: {
       type: DataTypes.STRING,
       allowNull: true,

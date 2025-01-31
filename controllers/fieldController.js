@@ -3,7 +3,6 @@ const { vars } = require("../server/constants.js");
 const { statusCodeVars } = require("../server/statusCode.js");
 const { dataNotExist } = require("../helper/check_existence.helper.js");
 const { Field, Service, ServiceDetails } = require("../models/index.js");
-const { sequelize } = require("sequelize");
 
 exports.createField = async (req, res, next) => {
   try {
@@ -18,10 +17,6 @@ exports.createField = async (req, res, next) => {
       alt,
       metas,
     } = req.body;
-
-    // Get the highest index
-    const maxIndex = await Field.max('index') || 0;
-
     const newField = await Field.create({
       slug,
       title,
@@ -32,7 +27,6 @@ exports.createField = async (req, res, next) => {
       image,
       alt,
       metas,
-      index: maxIndex + 1  // Set the new index as highest + 1
     });
     return responseGenerator(
       res,
@@ -88,7 +82,6 @@ exports.updateField = async (req, res, next) => {
 exports.getAllField = async (req, res, next) => {
   try {
     const fields = await Field.findAll({
-      order: [["index", "ASC"]],  // Order by index ascending
       include: [
         {
           model: Service,
@@ -141,7 +134,6 @@ exports.getFieldBySlug = async (req, res, next) => {
       where: {
         slug: slug,
       },
-      order: [["index", "ASC"]],  // Order by index ascending
       include: [
         {
           model: Service,
@@ -158,48 +150,6 @@ exports.getFieldBySlug = async (req, res, next) => {
     });
     dataNotExist(field, vars.FIELD_NOT_FOUND, statusCodeVars.NOT_FOUND);
     return responseGenerator(res, vars.FIELD_GET, statusCodeVars.OK, field);
-  } catch (err) {
-    next(err);
-  }
-};
-
-// New function to reorder fields
-exports.reorderFields = async (req, res, next) => {
-  try {
-    const { firstFieldId, secondFieldId } = req.body;
-
-    // Find both fields
-    const firstField = await Field.findByPk(firstFieldId);
-    const secondField = await Field.findByPk(secondFieldId);
-
-    if (!firstField || !secondField) {
-      return responseGenerator(
-        res,
-        'One or both fields not found',
-        statusCodeVars.NOT_FOUND
-      );
-    }
-
-    // Store the original indices
-    const firstIndex = firstField.index;
-    const secondIndex = secondField.index;
-
-    // Use Field.sequelize instead of direct sequelize reference
-    await Field.sequelize.transaction(async (t) => {
-      await firstField.update({ index: secondIndex }, { transaction: t });
-      await secondField.update({ index: firstIndex }, { transaction: t });
-    });
-
-    const updatedFields = await Field.findAll({
-      order: [['index', 'ASC']]
-    });
-
-    return responseGenerator(
-      res,
-      'Fields reordered successfully',
-      statusCodeVars.OK,
-      updatedFields
-    );
   } catch (err) {
     next(err);
   }

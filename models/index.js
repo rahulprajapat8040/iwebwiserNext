@@ -38,5 +38,6 @@ module.exports = {
   SubHeader: require("./subHeader"),
   SubChildHeader: require("./subChildHeader"),
   Field: require('./field'),
-  Steps: require('./Steps')
+  Steps: require('./Steps'),
+  UserQuestions: require('./userQustions')
 };

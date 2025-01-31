@@ -1,4 +1,4 @@
-const { SubChildHeader, Technology, Field } = require("../models");
+const { SubChildHeader, Technology, Field, User } = require("../models");
 const CaseStudy = require("../models/caseStudy");
 const Feedback = require("../models/feedback");
 const Header = require("../models/header");
@@ -8,6 +8,7 @@ const Service = require("../models/service");
 const ServiceFaq = require("../models/ServiceFaq");
 const SubServices = require("../models/SubServices");
 const ServiceDetails = require('../models/serviceDetails');
+const UserQuestions = require('../models/userQustions');
 const IndustryPage = require('../models/IndustryPage');
 
 exports.relation = () => {
@@ -97,5 +98,12 @@ exports.relation = () => {
     onDelete: "CASCADE"
   });
 
-  // Remove all ServiceDetailsSubServices related code
+  User.hasMany(UserQuestions, {
+    foreignKey: "userId",
+    onDelete: "CASCADE"
+  });
+  UserQuestions.belongsTo(User, {
+    foreignKey: "userId",
+    onDelete: "CASCADE"
+  });
 };
