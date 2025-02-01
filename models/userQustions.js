@@ -18,8 +18,16 @@ const UserQuestions = sequelize.define('userQuestions', {
     },
     userId: {
         type: DataTypes.UUID,
-        allowNull: true  // Change to allow null for guest users
-    },
+        allowNull: true,
+        references: {
+            model: 'users',
+            key: 'id'
+        },
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE'
+    }
+}, {
+    timestamps: true
 })
 
 module.exports = UserQuestions
