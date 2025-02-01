@@ -82,6 +82,7 @@ exports.updateField = async (req, res, next) => {
 exports.getAllField = async (req, res, next) => {
   try {
     const fields = await Field.findAll({
+      order: [["index", 'ASC']],
       include: [
         {
           model: Service,
@@ -162,14 +163,6 @@ exports.reorderFields = async (req, res, next) => {
     // Find both fields
     const firstField = await Field.findByPk(firstFieldId);
     const secondField = await Field.findByPk(secondFieldId);
-
-    if (!firstField || !secondField) {
-      return responseGenerator(
-        res,
-        'One or both fields not found',
-        statusCodeVars.NOT_FOUND
-      );
-    }
 
     // Store the original indices
     const firstIndex = firstField.index;
