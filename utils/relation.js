@@ -1,4 +1,4 @@
-const { SubChildHeader, Technology, Field, User } = require("../models");
+const { SubChildHeader, Technology, Field, User } = require("../models/index");
 const CaseStudy = require("../models/caseStudy");
 const Feedback = require("../models/feedback");
 const Header = require("../models/header");

@@ -279,7 +279,6 @@ Question: "${usermessage}"`;
                 question: usermessage,
                 answer: aiResponse,
                 userId: userId,
-                timestamp: new Date(),
                 keywords: analysis
             });
         }

@@ -20,6 +20,6 @@ const UserQuestions = sequelize.define('userQuestions', {
         type: DataTypes.UUID,
         allowNull: false
     },
-})
+}, { timestamps: true })
 
 module.exports = UserQuestions
