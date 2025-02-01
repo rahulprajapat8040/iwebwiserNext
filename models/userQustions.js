@@ -16,10 +16,7 @@ const UserQuestions = sequelize.define('userQuestions', {
     keywords: {
         type: DataTypes.JSON
     },
-    userId: {
-        type: DataTypes.UUID,
-        allowNull: false
-    },
+
 }, { timestamps: true })
 
 module.exports = UserQuestions
