@@ -157,11 +157,11 @@ exports.getFieldBySlug = async (req, res, next) => {
 
 exports.reorderFields = async (req, res, next) => {
   try {
-    const { firstId, secondId } = req.body;
+    const { firstFieldId, secondFieldId } = req.body;
 
     // Get both fields
-    const firstField = await Field.findByPk(firstId);
-    const secondField = await Field.findByPk(secondId);
+    const firstField = await Field.findByPk(firstFieldId);
+    const secondField = await Field.findByPk(secondFieldId);
 
     // Check if both fields exist
     dataNotExist(firstField, vars.FIELD_NOT_FOUND, statusCodeVars.NOT_FOUND);
