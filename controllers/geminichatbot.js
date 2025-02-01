@@ -486,12 +486,20 @@ exports.getAllChat = async (req, res) => {
                 keywordAnalysis.sentimentAnalysis.neutral++;
             }
 
+            // Safely handle category keywords
             if (chat.keywords?.category) {
-                chat.keywords.category.forEach(category => {
-                    keywordAnalysis.byCategory.set(
-                        category,
-                        (keywordAnalysis.byCategory.get(category) || 0) + 1
-                    );
+                // Convert to array if it's not already one
+                const categories = Array.isArray(chat.keywords.category) 
+                    ? chat.keywords.category 
+                    : [chat.keywords.category];
+
+                categories.forEach(category => {
+                    if (category) {  // Additional check to ensure category is not null/undefined
+                        keywordAnalysis.byCategory.set(
+                            category,
+                            (keywordAnalysis.byCategory.get(category) || 0) + 1
+                        );
+                    }
                 });
             }
 
