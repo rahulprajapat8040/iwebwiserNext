@@ -159,24 +159,50 @@ exports.reorderFields = async (req, res, next) => {
   try {
     const { firstFieldId, secondFieldId } = req.body;
 
-    // Get both fields
+    // Find both fields
     const firstField = await Field.findByPk(firstFieldId);
     const secondField = await Field.findByPk(secondFieldId);
 
-    // Check if both fields exist
-    dataNotExist(firstField, vars.FIELD_NOT_FOUND, statusCodeVars.NOT_FOUND);
-    dataNotExist(secondField, vars.FIELD_NOT_FOUND, statusCodeVars.NOT_FOUND);
+    if (!firstField || !secondField) {
+      return responseGenerator(
+        res,
+        'One or both fields not found',
+        statusCodeVars.NOT_FOUND
+      );
+    }
 
-    // Swap their indexes
-    const tempIndex = firstField.index;
-    await firstField.update({ index: secondField.index });
-    await secondField.update({ index: tempIndex });
+    // Store the original indices
+    const firstIndex = firstField.index;
+    const secondIndex = secondField.index;
+
+    // Use Field.sequelize for transaction
+    await Field.sequelize.transaction(async (t) => {
+      await firstField.update({ index: secondIndex }, { transaction: t });
+      await secondField.update({ index: firstIndex }, { transaction: t });
+    });
+
+    const updatedFields = await Field.findAll({
+      order: [['index', 'ASC']],
+      include: [
+        {
+          model: Service,
+          separate: true,
+          order: [['index', 'ASC']],
+          include: [
+            {
+              model: ServiceDetails,
+              attributes: ["slug"],
+            },
+          ],
+        },
+      ],
+    });
 
     return responseGenerator(
       res,
-      "Fields reordered successfully",
+      'Fields reordered successfully',
       statusCodeVars.OK,
-      { firstField, secondField }
+      updatedFields
     );
   } catch (err) {
     next(err);
