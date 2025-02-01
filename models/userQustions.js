@@ -3,7 +3,7 @@ const sequelize = require('../config/db')
 
 const UserQuestions = sequelize.define('userQuestions', {
     id: {
-        type: DataTypes.UUID,
+        type: DataTypes.STRING(36).BINARY,
         defaultValue: DataTypes.UUIDV4,
         primaryKey: true
     },
@@ -17,7 +17,7 @@ const UserQuestions = sequelize.define('userQuestions', {
         type: DataTypes.JSON
     },
     userId: {
-        type: DataTypes.UUID,
+        type: DataTypes.STRING(36).BINARY,
         allowNull: true,
         references: {
             model: 'users',
