@@ -18,16 +18,8 @@ const UserQuestions = sequelize.define('userQuestions', {
     },
     userId: {
         type: DataTypes.UUID,
-        allowNull: true,
-        references: {
-            model: 'users',
-            key: 'id'
-        },
-        onDelete: 'CASCADE',
-        onUpdate: 'CASCADE'
-    }
-}, {
-    timestamps: true
+        allowNull: false
+    },
 })
 
 module.exports = UserQuestions
