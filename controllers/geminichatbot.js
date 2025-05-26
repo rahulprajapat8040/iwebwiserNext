@@ -13,7 +13,7 @@ const modelConfig = {
         temperature: 0.9,
         topK: 40,
         topP: 0.95,
-        maxOutputTokens: 4096,
+        maxOutputTokens: 8192,
     }
 };
 
@@ -106,20 +106,11 @@ const formatContentForAI = (content) => {
         }
     });
 
+    // Add a single relevant link
+    const relevantLink = analysis.contacts.url ? `<Link href="${analysis.contacts.url}">Visit our website</Link>` : '';
+    formattedContent += relevantLink;
+
     return formattedContent;
-};
-
-// Match keywords with user query
-const findRelevantContent = (userMessage, websiteContent) => {
-    const userWords = userMessage.toLowerCase().split(/\W+/);
-    const relevantSections = websiteContent.filter(section => {
-        const keywords = section.keywords || [];
-        return keywords.some(keyword =>
-            userWords.some(word => word.includes(keyword) || keyword.includes(word))
-        );
-    });
-
-    return relevantSections;
 };
 
 // 3. Chat History Helper Functions
@@ -191,14 +182,15 @@ const createPrompt = (userName, userMessage, websiteContent, userContext) => {
     return `You are an AI assistant named Gemini. Please provide a response following these guidelines:
     - Use a friendly, professional tone
     - Start with a greeting addressing ${userName}
-    - Keep responses clear and concise
+    - Keep responses clear and concise (preferably under 100 words)
     - Format important information with bullet points
     - Include relevant details from the context when appropriate
+    - Provide URLs for relevant sections as <Link> tags
 
 User Question: ${userMessage}
 
 Context:
-${formatContentForAI(websiteContent)}
+${formatContentForAI(websiteContent).replace(/(https?:\/\/[^\s]+)/g, '<Link href="$1">$1</Link>')}
 
 ${userContext ? `Previous Interaction History:
 ${formatChatHistory(userContext.history)}` : 'No previous interaction history.'}`;
@@ -234,19 +226,19 @@ Question: "${usermessage}"`;
 
         const categoryAnalysis = await model.generateContent(categoryPrompt);
         let analysis;
-        
+
         try {
             // Clean and parse the response
             const responseText = categoryAnalysis.response.text()
                 .replace(/```json/g, '')  // Remove any markdown formatting
                 .replace(/```/g, '')      // Remove closing markdown
                 .trim();                  // Remove whitespace
-            
+
             // Find the first { and last } to extract valid JSON
             const start = responseText.indexOf('{');
             const end = responseText.lastIndexOf('}') + 1;
             const jsonStr = responseText.slice(start, end);
-            
+
             analysis = JSON.parse(jsonStr);
         } catch (parseError) {
             console.error("JSON Parse Error:", parseError);
@@ -489,8 +481,8 @@ exports.getAllChat = async (req, res) => {
             // Safely handle category keywords
             if (chat.keywords?.category) {
                 // Convert to array if it's not already one
-                const categories = Array.isArray(chat.keywords.category) 
-                    ? chat.keywords.category 
+                const categories = Array.isArray(chat.keywords.category)
+                    ? chat.keywords.category
                     : [chat.keywords.category];
 
                 categories.forEach(category => {
@@ -572,7 +564,7 @@ exports.getAllChat = async (req, res) => {
             if (chat.userId) {
                 // Count interactions per user
                 userInteractions.set(
-                    chat.userId, 
+                    chat.userId,
                     (userInteractions.get(chat.userId) || {
                         count: 0,
                         lastActive: null,
@@ -584,7 +576,7 @@ exports.getAllChat = async (req, res) => {
                 const userStats = userInteractions.get(chat.userId);
                 userStats.count++;
                 userStats.lastActive = chat.timestamp || chat.createdAt;
-                
+
                 // Track topics per user
                 if (chat.keywords?.topics) {
                     chat.keywords.topics.forEach(topic => {
@@ -679,7 +671,7 @@ exports.getAllChat = async (req, res) => {
                     },
                     userStats: {
                         totalUsers: userInteractions.size,
-                        activeUsers: enhancedUserStats.filter(u => 
+                        activeUsers: enhancedUserStats.filter(u =>
                             new Date(u.lastActive) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
                         ).length,
                         totalGuests: guestStats.totalGuests,
@@ -695,6 +687,51 @@ exports.getAllChat = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Internal server error",
+            error: error.message
+        });
+    }
+};
+
+
+exports.createWebsiteContent = async (req, res) => {
+    try {
+        const newContent = req.body;
+
+        // Validate the incoming content
+        if (!newContent || !Array.isArray(newContent)) {
+            return res.status(400).json({
+                success: false,
+                message: "Content must be an array of objects"
+            });
+        }
+        // Validate each content object
+        const isValidContent = newContent.every(item =>
+            item.content &&
+            Array.isArray(item.keywords) &&
+            item.keywords.length > 0
+        );
+
+        if (!isValidContent) {
+            return res.status(400).json({
+                success: false,
+                message: "Each content item must have 'content' and 'keywords' fields"
+            });
+        }
+
+        // Write to the JSON file
+        const filePath = path.join(__dirname, "..", "content", "websiteContent.json");
+        fs.writeFileSync(filePath, JSON.stringify(newContent, null, 4), "utf-8");
+
+        return res.status(200).json({
+            success: true,
+            message: "Website content updated successfully",
+            data: newContent
+        });
+    } catch (error) {
+        console.error("Error updating website content:", error);
+        return res.status(500).json({
+            success: false,
+            message: "Failed to update website content",
             error: error.message
         });
     }

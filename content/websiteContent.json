@@ -1,30 +1,37 @@
 [
     {
-        "content": "Welcome to iWebwiser - Your Trusted Partner!",
-        "keywords": ["welcome", "introduction"]
+        "content": "Welcome to our website",
+        "keywords": ["welcome", "intro"],
+        "url": "https://iwebwiser.com"
     },
     {
         "content": "Our Services and Pricing:\nWe offer comprehensive web development solutions to suit every need. Our Basic Website Development package starts at ₹5,000 with 1 week delivery, perfect for small businesses. It includes 4-5 pages, social media integration, and a contact form.\n\nOur Standard Website Development package at ₹7,000 (1 week delivery) offers 6-8 pages with enhanced functionality.\n\nFor e-commerce businesses, we provide complete online store solutions at ₹15,000 with 1 month delivery, including product management, inventory system, and payment integration.\n\nCustom Solutions:\n- Social Media App Development: ₹50,000 (6-8 months)\n- Delivery App Development: ₹40,000 (1-6 months)",
-        "keywords": ["services", "pricing", "packages", "website development", "ecommerce", "custom solutions", "social media app", "delivery app"]
+        "keywords": ["services", "pricing", "packages", "website development", "ecommerce", "custom solutions", "social media app", "delivery app"],
+        "url": "https://iwebwiser.com/services"
     },
     {
         "content": "Technologies We Use:\nWe leverage cutting-edge technologies including React.js, Next.js for frontend, Node.js and Python for backend, MongoDB and MySQL for databases, and AWS/Google Cloud for hosting. We also offer mobile app development using React Native and Flutter, and integrate AI/ML capabilities when needed.",
-        "keywords": ["technology", "tech stack", "frontend", "backend", "database", "cloud", "mobile", "AI", "ML"]
+        "keywords": ["technology", "tech stack", "frontend", "backend", "database", "cloud", "mobile", "AI", "ML"],
+        "url": "https://iwebwiser.com/technologies"
     },
     {
         "content": "About Us:\nWe're a passionate team of developers and designers with over 10 years of experience. We've successfully delivered 100+ projects across various industries. Our focus is on creating innovative, scalable, and user-friendly digital solutions that help businesses grow online.",
-        "keywords": ["about", "experience", "team", "projects", "expertise"]
+        "keywords": ["about", "experience", "team", "projects", "expertise"],
+        "url": "https://iwebwiser.com/about"
     },
     {
         "content": "Contact Information:\nReach out to us anytime! We provide 24/7 support.\nEmail: support@iwebwiser.com\nPhone: +91 XXXXXXXXXX\nWorking Hours: Always available for support\n\nVisit us at /contact for more details.",
-        "keywords": ["contact", "support", "email", "phone", "hours", "availability"]
+        "keywords": ["contact", "support", "email", "phone", "hours", "availability"],
+        "url": "https://iwebwiser.com/contact"
     },
     {
         "content": "Additional Services:\n- Custom Website Development\n- Mobile App Development\n- E-commerce Solutions\n- Social Media Integration\n- SEO Optimization\n- Cloud Hosting\n- 24/7 Technical Support\n- Maintenance and Updates",
-        "keywords": ["services", "development", "mobile", "ecommerce", "seo", "hosting", "support", "maintenance"]
+        "keywords": ["services", "development", "mobile", "ecommerce", "seo", "hosting", "support", "maintenance"],
+        "url": "https://iwebwiser.com/additional-services"
     },
     {
         "content": "Why Choose Us:\n- Experienced Team\n- Competitive Pricing\n- Quick Delivery\n- Quality Assurance\n- Ongoing Support\n- Modern Technologies\n- Custom Solutions\n- Reliable Service",
-        "keywords": ["benefits", "advantages", "quality", "experience", "pricing", "support", "technology"]
+        "keywords": ["benefits", "advantages", "quality", "experience", "pricing", "support", "technology"],
+        "url": "https://iwebwiser.com/why-choose-us"
     }
 ]

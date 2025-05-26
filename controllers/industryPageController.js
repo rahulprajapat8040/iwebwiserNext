@@ -1,4 +1,4 @@
-const { responseGenerator } = require("../helper/functions.helper.js");
+const { responseGenerator, parseIfString } = require("../helper/functions.helper.js");
 const { vars } = require("../server/constants.js");
 const { statusCodeVars } = require("../server/statusCode.js");
 const { dataNotExist } = require("../helper/check_existence.helper.js");
@@ -114,6 +114,8 @@ exports.getIndustryPageBySlug = async (req, res, next) => {
       order: [["index", "ASC"]]  // Order by index ascending
     });
 
+
+    const parserData = parseIfString(industryPage, ['industrySolution'])
     dataNotExist(
       industryPage,
       "Industry page not found",
@@ -124,7 +126,7 @@ exports.getIndustryPageBySlug = async (req, res, next) => {
       res,
       "Industry page retrieved",
       statusCodeVars.OK,
-      industryPage
+      parserData
     );
   } catch (err) {
     next(err);
